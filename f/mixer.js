@@ -14,6 +14,9 @@ mixer.ui.hooks = {};
 
 mixer.role = undefined;
 
+mixer.masterVol = 0.7;
+
+
 mixer.log = function(text){
 	console.log(text);
 };
@@ -135,6 +138,17 @@ mixer.ui.dom.autoConnectBox = document.getElementById("autoConnectBox");
 mixer.ui.dom.errorCont = document.getElementById("errorCont");
 mixer.ui.dom.back = document.getElementById("back");
 mixer.ui.dom.hostOnly = document.getElementsByClassName("hostOnly");
+mixer.ui.dom.masterSlider = document.getElementById("masterSlider");
+
+
+mixer.ui.dom.masterSlider.addEventListener("input", function(){
+	mixer.masterVol = mixer.ui.dom.masterSlider.value / 100;
+	for(let sound in mixer.sounds){
+		mixer.sounds[sound].setVolume(mixer.sounds[sound].dom.slider.value);
+	}
+	
+});
+
 
 mixer.ui.errorReconnect = false;
 
@@ -344,7 +358,7 @@ mixer.addYoutube = function(id, volume, hostCommand){
 	//sound.youtube.setVolume(70);
 	
 	sound.setVolume = function(vol){
-		sound.youtube.setVolume(vol);
+		sound.youtube.setVolume(vol * mixer.masterVol);
 	}
 
 	sound.dom.channel = document.createElement("div");
@@ -382,7 +396,7 @@ mixer.addYoutube = function(id, volume, hostCommand){
 	
 	
 	sound.send = function(conn){
-		conn.send({command:"addYoutube", videoID: sound.id, soundVolume: sound.youtube.getVolume()});
+		conn.send({command:"addYoutube", videoID: sound.id, soundVolume: sound.dom.slider.value /*sound.youtube.getVolume()*/});
 	}
 	
 	mixer.sounds.push(sound);
@@ -420,7 +434,7 @@ mixer.addSound = function(url, volume, hostCommand){
 	sound.dom.sound.volume = volume/100;
 	
 	sound.setVolume = function(vol){
-		sound.dom.sound.volume = vol/100;
+		sound.dom.sound.volume = (vol/100) * mixer.masterVol;
 	}
 
 	sound.dom.channel = document.createElement("div");
@@ -461,7 +475,7 @@ mixer.addSound = function(url, volume, hostCommand){
 	sound.dom.channel.appendChild(sound.dom.label);
 	
 	sound.send = function(conn){
-		conn.send({command:"add", soundURL: sound.url, soundVolume: sound.dom.sound.volume*100});
+		conn.send({command:"add", soundURL: sound.url, soundVolume: sound.dom.slider.value/*sound.dom.sound.volume*100*/});
 	}
 	
 	mixer.sounds.push(sound);
