@@ -305,16 +305,36 @@ td.vrspacer{
 }
 
 a:link {
-	color: rgba(120, 120, 255);
+	color: rgb(120, 120, 255);
 	text-decoration: none;
 }
 
 a:visited {
-	color: rgba(150, 100, 220);
+	color: rgb(150, 100, 220);
 	text-decoration: none;
 }
 
 a:hover {
-	color: rgba(170, 170, 255);
+	color: rgb(170, 170, 255);
 	text-decoration: none;
+}
+
+button{
+	background-color: rgb(20, 20, 20);
+	border: 1px solid rgb(80, 80, 80);
+	color: rgb(200,200,200);
+	padding-left: 4px;
+	padding-right: 4px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	border-radius: 4px;
+}
+
+button:hover {
+	background-color: rgb(60, 60, 60);
+}
+
+button:active {
+	color: rgb(255,255,255);
+	background-color: rgb(100, 100, 100);
 }
