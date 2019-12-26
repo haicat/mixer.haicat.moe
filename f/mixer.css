@@ -293,3 +293,28 @@ td.vrspacer{
 	height: 0px;
 	overflow: hidden;
 }
+
+.bottomBar{
+	position: absolute;
+	bottom: 0px;
+	left: 0px;
+	right: 0px;
+	height: 24px;
+	
+	background-color: rgba(50,50,50,1);
+}
+
+a:link {
+	color: rgba(120, 120, 255);
+	text-decoration: none;
+}
+
+a:visited {
+	color: rgba(150, 100, 220);
+	text-decoration: none;
+}
+
+a:hover {
+	color: rgba(170, 170, 255);
+	text-decoration: none;
+}
