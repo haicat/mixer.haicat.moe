@@ -137,7 +137,7 @@ td.vrspacer{
     border-bottom: none;
 }
 
-#mixerAddSlider{
+.horiSlider{
 	-webkit-appearance: none;
 	-moz-appearance: none;
 	width: 100%;
@@ -255,6 +255,7 @@ td.vrspacer{
 	background-color: #000;
 	color: #000;
 	transition: background 0.2s;
+	height:16px;
 }
 
 #joinLink:after{
@@ -360,4 +361,8 @@ button:hover {
 button:active {
 	color: rgb(255,255,255);
 	background-color: rgb(100, 100, 100);
+}
+
+.maxWidth{
+	width: 100%;
 }

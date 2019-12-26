@@ -35,6 +35,11 @@ mixer.host = function(){
 	mixer.peer.on("error", mixer.on.hostError);
 	mixer.peer.on("connection", mixer.on.connection);
 	mixer.role = "host";
+	
+	for(let i = 0; i < mixer.ui.dom.hostOnly.length; i++){
+		mixer.ui.dom.hostOnly[i].setAttribute("class", "hostOnly");
+	}
+	
 	mixer.ui.showMain();
 };
 
@@ -60,6 +65,11 @@ mixer.on.hostError = function(err){
 mixer.on.open = function(){
 	mixer.log("Connected.");
 	mixer.role = "client";
+	
+	for(let i = 0; i < mixer.ui.dom.hostOnly.length; i++){
+		mixer.ui.dom.hostOnly[i].setAttribute("class", "hostOnly hidden");
+	}
+	
 	mixer.ui.hideLoader();
 	mixer.ui.showMain();
 };
@@ -124,6 +134,7 @@ mixer.ui.dom.joinLink = document.getElementById("joinLink");
 mixer.ui.dom.autoConnectBox = document.getElementById("autoConnectBox");
 mixer.ui.dom.errorCont = document.getElementById("errorCont");
 mixer.ui.dom.back = document.getElementById("back");
+mixer.ui.dom.hostOnly = document.getElementsByClassName("hostOnly");
 
 mixer.ui.errorReconnect = false;
 
