@@ -2,6 +2,7 @@ var mixer = {};
 window.mixer = mixer;
 
 mixer.siteUrl = "https://mixer.haicat.moe/";
+mixer.backgroundLast = 3; //last background image (higher number .png)
 
 mixer.peer = new Peer();
 mixer.connection = undefined;
@@ -9,6 +10,7 @@ mixer.on = {};
 mixer.ui = {};
 mixer.ui.dom = {};
 mixer.ui.hooks = {};
+
 
 mixer.role = undefined;
 
@@ -121,8 +123,13 @@ mixer.ui.dom.mixerAddSlider = document.getElementById("mixerAddSlider");
 mixer.ui.dom.joinLink = document.getElementById("joinLink");
 mixer.ui.dom.autoConnectBox = document.getElementById("autoConnectBox");
 mixer.ui.dom.errorCont = document.getElementById("errorCont");
+mixer.ui.dom.back = document.getElementById("back");
 
 mixer.ui.errorReconnect = false;
+
+var backIndex = Math.floor(Math.random() * mixer.backgroundLast) + 1;
+mixer.ui.dom.back.style.backgroundImage = "url('f/backgrounds/"+backIndex+".png')";
+
 
 mixer.ui.hideConnectBox = function(){
 	mixer.ui.dom.connectBox.className = "popup panel hidden";
