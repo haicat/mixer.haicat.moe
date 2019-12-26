@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<script src = "https://unpkg.com/peerjs@1.0.0/dist/peerjs.min.js"></script>
+	<script src = "https://www.youtube.com/iframe_api"></script>
+	<link rel = "stylesheet" href = "f/mixer.css">
+	</head>
+	<body>
+		<div class = "label">Your ID: </div>
+		<div id = "idBox"></div>
+		<div id = "soundCont" class = "softHide"></div>
+		<div id = "mixerBox" class = "panel hidden">
+			<div id = "mixerControls" class = "panel">
+				<div class = "titlebar center">Controls</div>
+				<table>
+					<tr>
+						<td>Join Link</td>
+						<td colspan="2"><div id="joinLink"></div></td>
+					</tr>
+					<tr>
+						<td>Audio URL</td>
+						<td><input id="soundURL" type="text" class = "textbox"></td>
+						<td><button onclick = "mixer.ui.hooks.addSound()">Add</button></td>
+					</tr>
+					<tr>
+						<td>YouTube URL</td>
+						<td><input id="youtubeID" type="text" class = "textbox"></td>
+						<td><button onclick = "mixer.ui.hooks.addYoutube()">Add</button></td>
+					</tr>
+					<tr>
+						<td>New Sound Volume</td>
+						<td colspan="2"><input id="mixerAddSlider" type="range" min="0" max="100" value="70"></td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		
+		<div class = "popup panel hidden" id = "loader">Connecting</div>
+		
+		<div class = "popup panel" id = "connectBox">
+			<div class = "titlebar center">Connection</div>
+			<table>
+				<tr>
+					<td><div class = "header">Join</div></td>
+					<td class = "vrspacer"></td>
+					<td><div class = "header">Host</div></td>
+				</tr>
+				<tr>
+					<td>
+						
+						<table>
+							<tr>
+								<td><div class = "label">Host ID</div></td>
+								<td><input type = "text" class = "textbox" id = "joinID"></input></td>
+							</tr>
+						</table>
+						<button onclick = "mixer.ui.hooks.connect()">Connect</button>
+						
+					</td>
+					<td class = "vr"></td>
+					<td>
+						<button onclick = "mixer.ui.hooks.host()">Host</button>
+					</td>
+				</tr>
+			</table>
+		</div>
+		
+		<div id = "errorCont" class="fadeOut">
+            <div class = "popup panel" id = "errorBox">
+                <div class = "titlebar center">Error</div>
+                <div id = "errorContent"></div>
+                <div class = "center"><button onclick = "mixer.ui.hooks.errorOK()">OK</button></div>
+            </div>
+		</div>
+		
+		<div class = "popup panel hidden" id = "autoConnectBox">
+			<div class = "titlebar center">Connection</div>
+			Connect to host?
+			<div class = "center">
+				<button onclick = "mixer.ui.hooks.acYes()">Yes</button>
+				<button onclick = "mixer.ui.hooks.acNo()">No</button>
+			</div>
+		</div>
+			
+		
+	</body>
+	<script src = "f/mixer.js"></script>
+</html>
