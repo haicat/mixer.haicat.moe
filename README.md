@@ -1,5 +1,5 @@
 # mixer.haicat.moe
-A peer-to-peer sound mixing board that runs (almost\*) entirely in the browser. Intended usage is for online tabletop (e.g. D&D and Pathfinder) sessions in which the DM wants to create soundscapes for their players.
+A peer-to-peer sound mixing board that runs (almost\*) entirely in the browser. Intended usage is for online tabletop (e.g. D&D and Pathfinder) sessions in which the DM wants to create soundscapes for their players. This can be downloaded and run as-is (although join links will not work; joining will have to be done via ID). Alternatively, you can use the hosted version [here](https://mixer.haicat.moe).
 
 \* A server is used to broker connections between users. By default, this uses [the PeerJS official PeerServer](https://peerjs.com/peerserver.html)
 
