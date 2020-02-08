@@ -19,6 +19,7 @@ In order of priority:
 * Synchronization
 * Pause/Play
 * Seeking
+* Oneshot soundboard for non-looping SFX
 * Playlist feature for music
 * Saving and loading preset soundscapes
 * Default presets (with quick links to load them)
