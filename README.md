@@ -12,11 +12,11 @@ One user hosts a session, and other users can connect. Once connected, the host 
 * Peer-to-peer connection (via [PeerJS](https://peerjs.com/))
 * Easy joining via generated link
 * Renamable tracks for organization
+* Synchronization
 * Cool backgrounds B)
 
 ## Planned Features
 In order of priority:
-* Synchronization
 * Pause/Play
 * Seeking
 * Oneshot soundboard for non-looping SFX
