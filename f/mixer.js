@@ -16,6 +16,7 @@ mixer.role = undefined;
 
 mixer.masterVol = 0.7;
 
+mixer.syncTolerance = 3; // number of seconds the syncing can be off by, below which it wont correct
 
 mixer.log = function(text){
 	console.log(text);
@@ -90,7 +91,7 @@ mixer.on.clientData = function(data){
 	if(data.commend == "undefined"){return;};
 	switch(data.command.trim()){
 		case "add":
-			mixer.addSound(data.soundURL, data.soundVolume, true);
+			mixer.addSound(data.soundURL, data.soundVolume, data.timeStamp, true);
 			break;
 		case "volume":
 			mixer.setVolume(data.soundIndex, data.soundVolume);
@@ -99,7 +100,10 @@ mixer.on.clientData = function(data){
 			mixer.removeSound(mixer.sounds[data.soundIndex], true);
 			break;
 		case "addYoutube":
-			mixer.addYoutube(data.videoID, data.soundVolume,true);
+			mixer.addYoutube(data.videoID, data.soundVolume, data.timeStamp, true);
+			break;
+		case "seek":
+			mixer.seek(data.soundIndex, data.timeStamp, true);
 			break;
 		default:
 			mixer.log("Unknown host command: "+data.command);
@@ -112,7 +116,7 @@ mixer.on.connection = function(conn){
 	});
 	conn.on("open", function(){
 		for(let sound in mixer.sounds){
-			console.log("Sending "+mixer.sounds[sound].url);
+			console.log("Sending "+sound);
 			mixer.sounds[sound].send(conn);
 			//conn.send({command:"add", soundURL: mixer.sounds[sound].url});
 		}
@@ -120,6 +124,15 @@ mixer.on.connection = function(conn){
 
 	mixer.log("Client connected.");
 };
+
+mixer.resync = function(){
+	if(mixer.role != "host"){return;};
+	for(let sound in mixer.sounds){
+		console.log("Syncing "+sound);
+		mixer.seek(sound, mixer.sounds[sound].getTime(), false, true)
+			//conn.send({command:"add", soundURL: mixer.sounds[sound].url});
+	}
+}
 
 
 mixer.ui.dom.idBox = document.getElementById("idBox");
@@ -292,6 +305,21 @@ mixer.setVolume = function(index, vol){
 	mixer.sounds[index].setVolume(vol);
 };
 
+mixer.seek = function(index, time, hostCommand, sendOnly){
+	if(hostCommand == undefined){hostCommand = false;};
+	if(sendOnly == undefined){sendOnly = false;};
+	if(!hostCommand){
+		if(mixer.role == "client"){
+			return;
+		}
+		if(mixer.role == "host"){
+			mixer.sendData({command:"seek", soundIndex: index, timeStamp:time});
+		}
+	}
+	if(sendOnly){return;};
+	mixer.sounds[index].seek(time);
+};
+
 mixer.ui.hooks.setVolume = function(sound){
 	if(mixer.role == "host"){
 			mixer.sendData({command:"volume",soundIndex: mixer.sounds.indexOf(sound),soundVolume:sound.dom.slider.value});
@@ -301,9 +329,11 @@ mixer.ui.hooks.setVolume = function(sound){
 };
 
 
-var youtubeOnReady = function(event, sound, volume){
+var youtubeOnReady = function(event, sound, volume, time){
 	event.target.playVideo();
 	sound.setVolume(volume);
+	sound.seek(time);
+	mixer.log(time);
 };
 
 var youtubeOnStateChange = function(event){
@@ -313,7 +343,7 @@ var youtubeOnStateChange = function(event){
 	}
 };
 
-mixer.addYoutube = function(id, volume, hostCommand){
+mixer.addYoutube = function(id, volume, time, hostCommand){
 	var existing = document.getElementById(id);
 	if(existing != null){
 		mixer.ui.showError("Cannot add the same YouTube video twice.", false);
@@ -325,7 +355,7 @@ mixer.addYoutube = function(id, volume, hostCommand){
 			return;
 		}
 		if(mixer.role == "host"){
-			mixer.sendData({command:"addYoutube", soundVolume: volume, videoID:id});
+			mixer.sendData({command:"addYoutube", soundVolume: volume, timeStamp: time, videoID:id});
 		}
 	}
 	
@@ -342,7 +372,7 @@ mixer.addYoutube = function(id, volume, hostCommand){
 		width: '640',
 		videoId: id,
 		events: {
-			'onReady': function(event){youtubeOnReady(event, sound, volume);},
+			'onReady': function(event){youtubeOnReady(event, sound, volume, time);},
 			'onStateChange': youtubeOnStateChange,
             'onError': function(){
                 sound.dom.channel.className = "mixerChannel channelError";
@@ -359,6 +389,21 @@ mixer.addYoutube = function(id, volume, hostCommand){
 	
 	sound.setVolume = function(vol){
 		sound.youtube.setVolume(vol * mixer.masterVol);
+	}
+	
+	sound.seek = function(time){
+		let diff = Math.abs(time - sound.getTime());
+		if(diff > mixer.syncTolerance){
+			sound.youtube.seekTo(time, true);
+		}
+	}
+	
+	sound.getTime = function(){
+		return sound.youtube.getCurrentTime();
+	}
+	
+	sound.getDuration = function(){
+		return sound.youtube.getDuration();
 	}
 
 	sound.dom.channel = document.createElement("div");
@@ -396,7 +441,7 @@ mixer.addYoutube = function(id, volume, hostCommand){
 	
 	
 	sound.send = function(conn){
-		conn.send({command:"addYoutube", videoID: sound.id, soundVolume: sound.dom.slider.value /*sound.youtube.getVolume()*/});
+		conn.send({command:"addYoutube", videoID: sound.id, soundVolume: sound.dom.slider.value, timeStamp: sound.getTime() /*sound.youtube.getVolume()*/});
 	}
 	
 	mixer.sounds.push(sound);
@@ -414,14 +459,14 @@ mixer.addYoutube = function(id, volume, hostCommand){
 	//mixer.ui.dom.soundCont.appendChild(sound.dom.sound);
 }
 
-mixer.addSound = function(url, volume, hostCommand){
+mixer.addSound = function(url, volume, time, hostCommand){
 	if(hostCommand == undefined){hostCommand = false;};
 	if(!hostCommand){
 		if(mixer.role == "client"){
 			return;
 		}
 		if(mixer.role == "host"){
-			mixer.sendData({command:"add", soundVolume: volume, soundURL:url});
+			mixer.sendData({command:"add", soundVolume: volume, timeStamp: time, soundURL:url});
 		}
 	}
 	let sound = {};
@@ -432,9 +477,25 @@ mixer.addSound = function(url, volume, hostCommand){
 	sound.dom.sound.loop = true;
 	sound.dom.sound.autoplay = true;
 	sound.dom.sound.volume = volume/100;
+	sound.dom.sound.currentTime = time;
 	
 	sound.setVolume = function(vol){
 		sound.dom.sound.volume = (vol/100) * mixer.masterVol;
+	}
+	
+	sound.seek = function(time){
+		let diff = Math.abs(time - sound.getTime());
+		if(diff > mixer.syncTolerance){
+			sound.dom.sound.currentTime = time;
+		}
+	}
+	
+	sound.getTime = function(){
+		return sound.dom.sound.currentTime;
+	}
+	
+	sound.getDuration = function(){
+		return sound.dom.sound.duration;
 	}
 
 	sound.dom.channel = document.createElement("div");
@@ -475,7 +536,7 @@ mixer.addSound = function(url, volume, hostCommand){
 	sound.dom.channel.appendChild(sound.dom.label);
 	
 	sound.send = function(conn){
-		conn.send({command:"add", soundURL: sound.url, soundVolume: sound.dom.slider.value/*sound.dom.sound.volume*100*/});
+		conn.send({command:"add", soundURL: sound.url, soundVolume: sound.dom.slider.value, timeStamp: sound.getTime()/*sound.dom.sound.volume*100*/});
 	}
 	
 	mixer.sounds.push(sound);
@@ -513,6 +574,9 @@ mixer.ui.hooks.addYoutube = function(){
 	mixer.addYoutube(ytid, mixer.ui.dom.mixerAddSlider.value);
 }
 
+mixer.ui.hooks.resync = function(){
+	mixer.resync();
+}
 
 mixer.init = function(){
 	var url = new URL(window.location.href);
