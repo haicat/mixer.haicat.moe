@@ -257,7 +257,7 @@ td.vrspacer{
     border: 2px solid rgb(40,40,40);
     margin: 0px;
     padding: 2px;
-    border-radius: 4px;
+    /*border-radius: 4px;*/
 }
 
 #joinLink{
