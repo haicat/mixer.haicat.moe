@@ -9,6 +9,7 @@ One user hosts a session, and other users can connect. Once connected, the host 
 ## Current Features
 * Adding sounds via Youtube or direct links to sound files
 * Volume mixing
+* Playlist feature for music
 * Peer-to-peer connection (via [PeerJS](https://peerjs.com/))
 * Easy joining via generated link
 * Renamable tracks for organization
@@ -20,6 +21,5 @@ In order of priority:
 * Pause/Play
 * Seeking
 * Oneshot soundboard for non-looping SFX
-* Playlist feature for music
 * Saving and loading preset soundscapes
 * Default presets (with quick links to load them)
