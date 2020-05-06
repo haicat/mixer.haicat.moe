@@ -573,6 +573,9 @@ mixer.jukeAddYoutube = function(id, time, hostCommand){
 	
 	sound.dom.del = document.createElement("button");
 	sound.dom.del.className = "jukeDelete";
+	if(mixer.role == "client"){
+		sound.dom.del.className += " hidden";
+	}
 	
 	sound.dom.label = document.createElement("div");
 	sound.dom.label.className = "jukeLabel";
@@ -674,6 +677,9 @@ mixer.addYoutube = function(id, volume, time, hostCommand){
 	
 	sound.dom.del = document.createElement("button");
 	sound.dom.del.className = "mixerDelete";
+	if(mixer.role == "client"){
+		sound.dom.del.className += " hidden";
+	}
 	
 	sound.dom.label = document.createElement("div");
 	sound.dom.label.className = "mixerLabel";
@@ -770,6 +776,9 @@ mixer.addSound = function(url, volume, time, hostCommand){
 	
 	sound.dom.del = document.createElement("button");
 	sound.dom.del.className = "mixerDelete";
+	if(mixer.role == "client"){
+		sound.dom.del.className += " hidden";
+	}
 	
 	sound.dom.label = document.createElement("div");
 	sound.dom.label.className = "mixerLabel";
