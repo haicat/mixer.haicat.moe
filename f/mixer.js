@@ -351,14 +351,20 @@ mixer.removeSound = function(sound, hostCommand){
 
 mixer.removeTrack = function(sound, hostCommand){
 	if(hostCommand == undefined){hostCommand = false;};
+	
+	let trackNo = mixer.music.indexOf(sound);
+	
 	if(!hostCommand){
 		if(mixer.role == "client"){
 			return;
 		}
 		if(mixer.role == "host"){
-			mixer.sendData({command:"removeTrack",soundIndex:mixer.music.indexOf(sound)});
+			mixer.sendData({command:"removeTrack",soundIndex:trackNo});
 		}
 	}
+	
+	
+	
 	sound.dom.channel.parentNode.removeChild(sound.dom.channel);
 	sound.dom.del.parentNode.removeChild(sound.dom.del);
 	sound.dom.label.parentNode.removeChild(sound.dom.label);
@@ -373,8 +379,15 @@ mixer.removeTrack = function(sound, hostCommand){
 	sound.dom.del = undefined;
 	sound.dom.label = undefined;
 	sound.dom.sound = undefined;
+	mixer.music.splice(trackNo,1);
 	
-	mixer.music.splice(mixer.music.indexOf(sound),1);
+	if(mixer.trackNumber > trackNo){
+		mixer.trackNumber--;
+	}
+	else if((mixer.trackNumber == trackNo) && mixer.playing){
+		mixer.playTrack(mixer.trackNumber);
+	}
+	
 };
 
 mixer.setVolume = function(index, vol){
