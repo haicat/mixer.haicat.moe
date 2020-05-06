@@ -831,6 +831,7 @@ var parseYoutube = function(url){
 
 mixer.ui.hooks.addSound = function(){
 	mixer.addSound(mixer.ui.dom.soundURL.value, mixer.ui.dom.mixerAddSlider.value);
+	mixer.ui.dom.soundURL.value = "";
 };
 
 mixer.ui.hooks.addYoutube = function(){
@@ -840,6 +841,7 @@ mixer.ui.hooks.addYoutube = function(){
 		return;
 	}
 	mixer.addYoutube(ytid, mixer.ui.dom.mixerAddSlider.value);
+	mixer.ui.dom.youtubeID.value = "";
 }
 
 mixer.ui.hooks.jukeAddYoutube = function(){
@@ -849,6 +851,7 @@ mixer.ui.hooks.jukeAddYoutube = function(){
 		return;
 	}
 	mixer.jukeAddYoutube(ytid);
+	mixer.ui.dom.jukeYoutubeID.value = "";
 }
 
 mixer.ui.hooks.resync = function(){
