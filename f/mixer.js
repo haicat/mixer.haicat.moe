@@ -121,6 +121,9 @@ mixer.on.clientData = function(data){
 		case "removeTrack":
 			mixer.removeTrack(mixer.music[data.soundIndex], true);
 			break;
+		case "jukeInitial":
+			mixer.jukeInitial(data.playing,data.trackNumber);
+			break;
 		default:
 			mixer.log("Unknown host command: "+data.command);
 	}
@@ -142,9 +145,10 @@ mixer.on.connection = function(conn){
 			console.log(sound);
 			mixer.music[sound].send(conn);
 		}
-		if(mixer.playing){
+		conn.send({command:"jukeInitial",playing:mixer.playing,trackNumber:mixer.trackNumber});
+		/*if(mixer.playing){
 			conn.send({command:"playTrack", soundIndex: mixer.trackNumber});
-		}
+		}*/
 	});
 
 	mixer.log("Client connected.");
@@ -433,6 +437,14 @@ mixer.playTrack = function(index, hostCommand){
 	mixer.playing = true;
 }
 
+mixer.jukeInitial = function(playing,trackNumber){
+	mixer.playing = playing;
+	mixer.trackNumber = trackNumber;
+	if(mixer.playing){
+		mixer.playTrack(mixer.trackNumber);
+	}
+}
+
 
 mixer.ui.hooks.jukePlay = function(){
 	mixer.playTrack(mixer.trackNumber);
@@ -459,9 +471,9 @@ var youtubeOnReady = function(event, sound, volume, time){
 var jukeYoutubeOnReady = function(event, sound, volume, time){
 	if(mixer.playing && (mixer.trackNumber == mixer.music.indexOf(sound))){
 		event.target.playVideo();
+		sound.seek(time);
 	}
 	sound.setVolume(volume);
-	sound.seek(time);
 	sound.setVolume();
 	sound.isReady = true;
 	mixer.log(time);
