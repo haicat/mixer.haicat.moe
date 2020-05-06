@@ -276,6 +276,7 @@ mixer.ui.hooks.acNo = function(){
 	mixer.ui.showConnectBox();
 }
 
+
 mixer.ui.showError = function(err, disconnect){
 	if(disconnect==true){
 		mixer.ui.errorReconnect = true;
@@ -845,12 +846,29 @@ mixer.ui.hooks.addYoutube = function(){
 }
 
 mixer.ui.hooks.jukeAddYoutube = function(){
-	var ytid = parseYoutube(mixer.ui.dom.jukeYoutubeID.value);
-	if(ytid == false){
-		mixer.ui.showError("Invalid YouTube Link", false);
+	let inputs = mixer.ui.dom.jukeYoutubeID.value.trim().split("\n");
+	if(inputs.length==0){
 		return;
 	}
-	mixer.jukeAddYoutube(ytid);
+	let err = false;
+	
+	for(index in inputs){
+		let line = inputs[index].trim();
+		if(line == ""){
+			continue;
+		}
+		var ytid = parseYoutube(line);
+		if(ytid==false){
+			err = true;
+			continue;
+		};
+		mixer.jukeAddYoutube(ytid);
+	}
+	
+	if(err == true){
+		mixer.ui.showError("One or more lines contained an invalid YouTube link and was not added.", false);
+		return;
+	}
 	mixer.ui.dom.jukeYoutubeID.value = "";
 }
 

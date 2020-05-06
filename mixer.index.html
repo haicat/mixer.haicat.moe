@@ -53,8 +53,8 @@
 						<td colspan="2"><input class = "horiSlider" id="musicVolume" type="range" min="0" max="100" value="70" /></td>
 					</tr>
 					<tr class = "hostOnly">
-						<td>YouTube URL</td>
-						<td><input id="jukeYoutubeID" type="text" class = "textbox" /></td>
+						<td>YouTube URL(s) <a class="helphover" href="javascript:void(0)" onclick = "alert('Multiple links can be entered at once separated by a linebreak.', false);" title="Multiple links can be entered at once separated by a linebreak.">?</a></td>
+						<td><textarea id="jukeYoutubeID" type="text" class = "textbox"></textarea></td>
 						<td><button onclick = "mixer.ui.hooks.jukeAddYoutube()">Add</button></td>
 					</tr>
 					<tr class = "hostOnly">

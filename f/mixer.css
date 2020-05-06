@@ -4,6 +4,14 @@ body{
 	font-family: sans-serif;
 }
 
+#jukeYoutubeID{
+	resize: vertical;
+}
+
+.helphover{
+	font-size: 50%;
+}
+
 #back{
 	z-index: -100;
 	position:absolute;
