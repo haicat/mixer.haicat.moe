@@ -589,6 +589,11 @@ mixer.jukeAddYoutube = function(id, time, hostCommand){
 	sound.dom.channel = document.createElement("div");
 	sound.dom.channel.className = "jukeTrack";
 	
+	sound.dom.channel.ondblclick = function(){
+		if(mixer.role=="client"){return;};
+		mixer.playTrack(mixer.music.indexOf(sound));
+	}
+	
 	sound.dom.del = document.createElement("button");
 	sound.dom.del.className = "jukeDelete";
 	if(mixer.role == "client"){
@@ -596,10 +601,22 @@ mixer.jukeAddYoutube = function(id, time, hostCommand){
 	}
 	
 	sound.dom.label = document.createElement("div");
-	sound.dom.label.className = "jukeLabel";
+	sound.dom.label.className = "jukeLabel noSelect";
+	
+	sound.dom.label.addEventListener('contextmenu', function(event){
+		sound.dom.label.contentEditable = "true";
+		sound.dom.label.focus();
+		sound.dom.label.className = "jukeLabel";
+		event.preventDefault();
+	});
+	
+	sound.dom.label.addEventListener('focusout', function(event){
+		sound.dom.label.contentEditable = "false";
+		sound.dom.label.className = "jukeLabel noSelect";
+	});
 	
 	sound.dom.label.appendChild(document.createTextNode(id));
-	sound.dom.label.contentEditable = "true";
+	//sound.dom.label.contentEditable = "true";
 	
 	sound.dom.channel.appendChild(sound.dom.del);
 	sound.dom.channel.appendChild(sound.dom.label);

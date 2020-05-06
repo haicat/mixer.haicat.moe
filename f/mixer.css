@@ -12,6 +12,10 @@ body{
 	font-size: 50%;
 }
 
+.noSelect{
+	user-select: none;
+}
+
 #back{
 	z-index: -100;
 	position:absolute;
