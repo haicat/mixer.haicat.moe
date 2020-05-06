@@ -463,6 +463,8 @@ mixer.ui.hooks.jukeSkip = function(){
 
 var youtubeOnReady = function(event, sound, volume, time){
 	event.target.playVideo();
+	sound.dom.label.innerHTML = "";
+	sound.dom.label.appendChild(document.createTextNode(sound.youtube.getVideoData().title));
 	sound.setVolume(volume);
 	sound.seek(time);
 	mixer.log(time);
@@ -473,6 +475,8 @@ var jukeYoutubeOnReady = function(event, sound, volume, time){
 		event.target.playVideo();
 		sound.seek(time);
 	}
+	sound.dom.label.innerHTML = "";
+	sound.dom.label.appendChild(document.createTextNode(sound.youtube.getVideoData().title));
 	sound.setVolume(volume);
 	sound.setVolume();
 	sound.isReady = true;
