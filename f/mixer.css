@@ -96,6 +96,112 @@ td.vrspacer{
 	display: inline-block;
 }
 
+
+
+#jukebox{
+	position: fixed;
+	top: 0px;
+	bottom: 0px;
+	width: 200px;
+	right: -200px;
+	transition: right 0.2s;
+}
+
+#jukeTag{
+	background-color: rgba(0,0,0,0.5);
+	position: absolute;
+	transform:rotate(-90deg);
+	width: 100px;
+	height: 30px;
+	left:-72px;
+	top:30px;
+	border: 1px solid rgba(255,255,255,0.2);
+	padding-top: 10px;
+	border-bottom: none;
+}
+
+/*this just makes it so we can pop out the jukebox easier*/
+#jukeTag:before{
+	/*background-color: #ff0000;*/
+	content: " ";
+	position: absolute;
+	left: -100vh;
+	right: -4px;
+	top:0px;
+	bottom:0px;
+}
+
+#jukebox:hover{
+	right: 0px;
+}
+
+
+#jukeControls{
+	
+}
+
+.jukeTrack{
+	display: inline-block;
+	border: 1px solid rgba(255,255,255,0.2);
+	background-color: rgba(255,255,255,0.2);
+	width:100%;
+	height: 24px;
+	/*width: 48px;
+	height: 200px;*/
+	padding: 0px;
+	position: relative;
+}
+
+.playing{
+	background-color: rgba(50,200,50,0.5)!important;
+}
+
+.jukeError{
+	background-color: rgba(200,50,50,0.5)!important;
+}
+
+.jukeLabel{
+	position:absolute;
+	left: 0px;
+	bottom: 0px;
+	top: 0px;
+	right: 26px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: hidden;
+}
+
+.jukeDelete{
+	-webkit-appearance: none;
+	appearance: none;
+	width: 24px;
+	height: 24px;
+	position: absolute;
+	right: 0px;
+	bottom: 0px;
+}
+
+.jukeDelete:before{
+	content:"";
+	position: absolute;
+	width: 16px;
+	height: 2px;
+	background-color: rgb(255,70,70);
+	left:2px;
+	transform: rotate(45deg);
+}
+
+.jukeDelete:after{
+	content:"";
+	position: absolute;
+	width: 16px;
+	height: 2px;
+	background-color: rgb(255,70,70);
+	left:2px;
+	transform: rotate(-45deg);
+}
+
+
 #mixerControls{
 	display: inline-block;
 	width: 300px;
@@ -105,12 +211,6 @@ td.vrspacer{
 	margin-right: 8px;
 }
 
-#mixerMusic{
-	position: absolute;
-	right: 0px;
-	top: 0px;
-	bottom: 0px;
-}
 
 .mixerChannel{
 	display: inline-block;

@@ -2,7 +2,7 @@ var mixer = {};
 window.mixer = mixer;
 
 mixer.siteUrl = "https://mixer.haicat.moe/";
-mixer.backgroundLast = 3; //last background image (higher number .png)
+mixer.backgroundLast = 3; //last background image (highest number .png)
 
 mixer.peer = new Peer();
 mixer.connection = undefined;
@@ -15,8 +15,15 @@ mixer.ui.hooks = {};
 mixer.role = undefined;
 
 mixer.masterVol = 0.7;
+mixer.musicVol = 0.7;
 
 mixer.syncTolerance = 3; // number of seconds the syncing can be off by, below which it wont correct
+
+mixer.sounds = [];
+mixer.music = [];
+mixer.playing = false;
+mixer.trackNumber = 0;
+
 
 mixer.log = function(text){
 	console.log(text);
@@ -105,6 +112,15 @@ mixer.on.clientData = function(data){
 		case "seek":
 			mixer.seek(data.soundIndex, data.timeStamp, true);
 			break;
+		case "jukeAddYoutube":
+			mixer.jukeAddYoutube(data.videoID, data.timeStamp, true)
+			break;
+		case "playTrack":
+			mixer.playTrack(data.soundIndex,true);
+			break;
+		case "removeTrack":
+			mixer.removeTrack(mixer.music[data.soundIndex], true);
+			break;
 		default:
 			mixer.log("Unknown host command: "+data.command);
 	}
@@ -115,10 +131,19 @@ mixer.on.connection = function(conn){
 		mixer.log(data);
 	});
 	conn.on("open", function(){
+		console.log("Sending channels:");
 		for(let sound in mixer.sounds){
-			console.log("Sending "+sound);
+			console.log(sound);
 			mixer.sounds[sound].send(conn);
 			//conn.send({command:"add", soundURL: mixer.sounds[sound].url});
+		}
+		console.log("Sending jukebox:");
+		for(let sound in mixer.music){
+			console.log(sound);
+			mixer.music[sound].send(conn);
+		}
+		if(mixer.playing){
+			conn.send({command:"playTrack", soundIndex: mixer.trackNumber});
 		}
 	});
 
@@ -152,16 +177,34 @@ mixer.ui.dom.errorCont = document.getElementById("errorCont");
 mixer.ui.dom.back = document.getElementById("back");
 mixer.ui.dom.hostOnly = document.getElementsByClassName("hostOnly");
 mixer.ui.dom.masterSlider = document.getElementById("masterSlider");
+mixer.ui.dom.jukebox = document.getElementById("jukebox");
+mixer.ui.dom.musicVolume = document.getElementById("musicVolume");
+mixer.ui.dom.jukeYoutubeID = document.getElementById("jukeYoutubeID");
 
-
-mixer.ui.dom.masterSlider.addEventListener("input", function(){
+mixer.ui.hooks.setMasterVol= function(){
 	mixer.masterVol = mixer.ui.dom.masterSlider.value / 100;
 	for(let sound in mixer.sounds){
 		mixer.sounds[sound].setVolume(mixer.sounds[sound].dom.slider.value);
 	}
-	
+};
+
+mixer.ui.hooks.setMusicVol = function(){
+	mixer.musicVol = mixer.ui.dom.musicVolume.value / 100;
+	for(let sound in mixer.music){
+		mixer.music[sound].setVolume();
+	}
+};
+
+mixer.ui.dom.masterSlider.addEventListener("input", function(){
+	mixer.ui.hooks.setMasterVol();
 });
 
+mixer.ui.dom.musicVolume.addEventListener("input", function(){
+	mixer.ui.hooks.setMusicVol();
+});
+
+mixer.ui.hooks.setMasterVol();
+mixer.ui.hooks.setMusicVol();
 
 mixer.ui.errorReconnect = false;
 
@@ -187,11 +230,13 @@ mixer.ui.hideLoader = function(){
 
 mixer.ui.showMain = function(){
 	mixer.ui.dom.mixerBox.className = "panel";
+	mixer.ui.dom.jukebox.className = "panel";
 	mixer.ui.updateID(mixer.peer.id);
 };
 
 mixer.ui.hideMain = function(){
 	mixer.ui.dom.mixerBox.className = "panel hidden";
+	mixer.ui.dom.jukebox.className = "panel hidden";
 };
 
 mixer.ui.updateID = function(id){
@@ -262,7 +307,7 @@ mixer.ui.hooks.host = function(){
 	mixer.host();
 };
 
-mixer.sounds = [];
+
 
 mixer.removeSound = function(sound, hostCommand){
 	if(hostCommand == undefined){hostCommand = false;};
@@ -298,6 +343,35 @@ mixer.removeSound = function(sound, hostCommand){
 	mixer.sounds.splice(mixer.sounds.indexOf(sound),1);
 };
 
+
+mixer.removeTrack = function(sound, hostCommand){
+	if(hostCommand == undefined){hostCommand = false;};
+	if(!hostCommand){
+		if(mixer.role == "client"){
+			return;
+		}
+		if(mixer.role == "host"){
+			mixer.sendData({command:"removeTrack",soundIndex:mixer.music.indexOf(sound)});
+		}
+	}
+	sound.dom.channel.parentNode.removeChild(sound.dom.channel);
+	sound.dom.del.parentNode.removeChild(sound.dom.del);
+	sound.dom.label.parentNode.removeChild(sound.dom.label);
+	
+	if(sound.youtube != undefined){
+		sound.youtube.destroy();
+	}
+	
+	sound.dom.sound.parentNode.removeChild(sound.dom.sound);
+	
+	sound.dom.channel = undefined;
+	sound.dom.del = undefined;
+	sound.dom.label = undefined;
+	sound.dom.sound = undefined;
+	
+	mixer.music.splice(mixer.music.indexOf(sound),1);
+};
+
 mixer.setVolume = function(index, vol){
 	//mixer.sounds[index].dom.sound.volume = vol;
 	//mixer.sounds[index].dom.slider.value = vol * 100;
@@ -328,11 +402,68 @@ mixer.ui.hooks.setVolume = function(sound){
 	sound.setVolume(sound.dom.slider.value);
 };
 
+mixer.playTrack = function(index, hostCommand){
+	if(mixer.music.length == 0){return;};
+	if(hostCommand == undefined){hostCommand = false;};
+
+	if(!hostCommand){
+		if(mixer.role == "client"){
+			return;
+		}
+		if(mixer.role == "host"){
+			mixer.sendData({command:"playTrack", soundIndex: index});
+		}
+	}
+	
+	for(let sound in mixer.music){
+		mixer.music[sound].pause();
+	}
+	
+	if(index == null){
+		mixer.playing = false;
+		return;
+	}
+	
+	if(index >= mixer.music.length){
+		index = 0;
+	}
+	
+	mixer.music[index].play();
+	mixer.trackNumber = index;
+	mixer.playing = true;
+}
+
+
+mixer.ui.hooks.jukePlay = function(){
+	mixer.playTrack(mixer.trackNumber);
+}
+
+mixer.ui.hooks.jukePause = function(){
+	mixer.playTrack(null);
+}
+
+mixer.ui.hooks.jukeSkip = function(){
+	mixer.trackNumber++;
+	mixer.playTrack(mixer.trackNumber);
+}
+
+
 
 var youtubeOnReady = function(event, sound, volume, time){
 	event.target.playVideo();
 	sound.setVolume(volume);
 	sound.seek(time);
+	mixer.log(time);
+};
+
+var jukeYoutubeOnReady = function(event, sound, volume, time){
+	if(mixer.playing && (mixer.trackNumber == mixer.music.indexOf(sound))){
+		event.target.playVideo();
+	}
+	sound.setVolume(volume);
+	sound.seek(time);
+	sound.setVolume();
+	sound.isReady = true;
 	mixer.log(time);
 };
 
@@ -342,6 +473,118 @@ var youtubeOnStateChange = function(event){
 		
 	}
 };
+
+var jukeYoutubeOnStateChange = function(event){
+	if(mixer.role == "client"){
+		return;
+	}
+	if(event.data === YT.PlayerState.ENDED){
+		mixer.trackNumber++;
+		mixer.playTrack(mixer.trackNumber);
+	}
+}
+
+mixer.jukeAddYoutube = function(id, time, hostCommand){
+	var existing = document.getElementById(id);
+	if(time==undefined){time=0;};
+	if(existing != null){
+		mixer.ui.showError("Cannot add the same YouTube video twice.", false);
+		return;
+	}
+	if(hostCommand == undefined){hostCommand = false;};
+	if(!hostCommand){
+		if(mixer.role == "client"){
+			return;
+		}
+		if(mixer.role == "host"){
+			mixer.sendData({command:"jukeAddYoutube", timeStamp: time, videoID:id});
+		}
+	}
+	
+	let sound = {};
+	sound.id = id;
+	sound.isReady = false;
+	sound.dom = {};
+	sound.dom.sound = document.createElement("div");
+	sound.dom.sound.id = id;
+	
+	mixer.ui.dom.soundCont.appendChild(sound.dom.sound);
+	
+	sound.youtube = new YT.Player(id,{
+		height: '390',
+		width: '640',
+		videoId: id,
+		events: {
+			'onReady': function(event){
+				jukeYoutubeOnReady(event,sound,mixer.musicVol,time);
+			},
+			'onStateChange': jukeYoutubeOnStateChange,
+            'onError': function(){
+                sound.dom.channel.className = "jukeTrack jukeError";
+            }
+		}
+	});
+	
+	sound.play = function(){
+		sound.dom.channel.className = "jukeTrack playing";
+		if(!sound.isReady){return;};
+		sound.youtube.seekTo(0, true);
+		sound.youtube.playVideo();
+	}
+	
+	sound.pause = function(){
+		sound.youtube.pauseVideo();
+		sound.dom.channel.className = "jukeTrack";
+	}
+	
+	sound.setVolume = function(){
+		sound.youtube.setVolume(mixer.musicVol * 100);
+	}
+	
+	sound.seek = function(time){
+		let diff = Math.abs(time - sound.getTime());
+		if(diff > mixer.syncTolerance){
+			sound.youtube.seekTo(time, true);
+		}
+	}
+	
+	sound.getTime = function(){
+		return sound.youtube.getCurrentTime();
+	}
+	
+	sound.getDuration = function(){
+		return sound.youtube.getDuration();
+	}
+
+	sound.dom.channel = document.createElement("div");
+	sound.dom.channel.className = "jukeTrack";
+	
+	sound.dom.del = document.createElement("button");
+	sound.dom.del.className = "jukeDelete";
+	
+	sound.dom.label = document.createElement("div");
+	sound.dom.label.className = "jukeLabel";
+	
+	sound.dom.label.appendChild(document.createTextNode(id));
+	sound.dom.label.contentEditable = "true";
+	
+	sound.dom.channel.appendChild(sound.dom.del);
+	sound.dom.channel.appendChild(sound.dom.label);
+	
+	
+	sound.send = function(conn){
+		conn.send({command:"jukeAddYoutube", videoID: sound.id, timeStamp: sound.getTime() });
+	}
+	
+	mixer.music.push(sound);
+	
+	sound.dom.del.addEventListener("click", function(){
+		mixer.removeTrack(sound);
+	});
+	
+	mixer.ui.dom.jukebox.appendChild(sound.dom.channel);
+	
+}
 
 mixer.addYoutube = function(id, volume, time, hostCommand){
 	var existing = document.getElementById(id);
@@ -572,6 +815,15 @@ mixer.ui.hooks.addYoutube = function(){
 		return;
 	}
 	mixer.addYoutube(ytid, mixer.ui.dom.mixerAddSlider.value);
+}
+
+mixer.ui.hooks.jukeAddYoutube = function(){
+	var ytid = parseYoutube(mixer.ui.dom.jukeYoutubeID.value);
+	if(ytid == false){
+		mixer.ui.showError("Invalid YouTube Link", false);
+		return;
+	}
+	mixer.jukeAddYoutube(ytid);
 }
 
 mixer.ui.hooks.resync = function(){

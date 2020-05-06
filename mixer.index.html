@@ -43,6 +43,28 @@
 				</table>
 			</div>
 		</div>
+		<div id="jukebox" class="panel hidden">
+			<div id="jukeTag" class="center">Jukebox</div>
+			<div id = "jukeControls" class = "panel">
+				
+				<table class = "maxWidth">
+					<tr>
+						<td>Music Volume</td>
+						<td colspan="2"><input class = "horiSlider" id="musicVolume" type="range" min="0" max="100" value="70"></td>
+					</tr>
+					<tr class = "hostOnly">
+						<td>YouTube URL</td>
+						<td><input id="jukeYoutubeID" type="text" class = "textbox"></td>
+						<td><button onclick = "mixer.ui.hooks.jukeAddYoutube()">Add</button></td>
+					</tr>
+					<tr class = "hostOnly">
+						<td><button onclick = "mixer.ui.hooks.jukePlay()">Play</button></td>
+						<td><button onclick = "mixer.ui.hooks.jukePause()">Pause</button></td>
+						<td><button onclick = "mixer.ui.hooks.jukeSkip()">Skip</button></td>
+					</tr>
+				</table>
+			</div>
+		</div>
 		
 		<div class = "popup panel hidden" id = "loader">Connecting</div>
 		
