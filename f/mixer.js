@@ -27,6 +27,7 @@ mixer.trackNumber = 0;
 
 mixer.log = function(text){
 	console.log(text);
+	mixer.notify(text,true)
 };
 
 mixer.connect = function(id){
@@ -39,12 +40,16 @@ mixer.connect = function(id){
 	mixer.connection = mixer.peer.connect(id);
 	mixer.connection.on("data", mixer.on.clientData);
 	mixer.connection.on("open", mixer.on.open);
+	mixer.connection.on("close", function(){
+		mixer.notifyImportant("Host disconnected.",false);
+	});
 	mixer.hostID = id;
 };
 
 mixer.host = function(){
 	mixer.peer.on("error", mixer.on.hostError);
 	mixer.peer.on("connection", mixer.on.connection);
+	mixer.peer.on("disconnected", mixer.on.serverDisconnect);
 	mixer.role = "host";
 	
 	for(let i = 0; i < mixer.ui.dom.hostOnly.length; i++){
@@ -53,6 +58,22 @@ mixer.host = function(){
 	
 	mixer.ui.showMain();
 };
+
+
+mixer.on.serverConnect = function(){
+	mixer.notify("Connected to the signaling server.", true);
+};
+
+mixer.peer.on("open", mixer.on.serverConnect);
+
+mixer.on.serverDisconnect = function(){
+	let notif = mixer.notifyImportant("Disconnected from the signaling server. Click here to reconnect.",false);
+	notif.onclick = function(){
+		mixer.peer.reconnect();
+		notif.clearNotification();
+		notif.onclick = undefined;
+	}
+}
 
 mixer.on.clientError = function(err){
 	mixer.ui.hideLoader();
@@ -150,6 +171,10 @@ mixer.on.connection = function(conn){
 			conn.send({command:"playTrack", soundIndex: mixer.trackNumber});
 		}*/
 	});
+	
+	conn.on("close", function(){
+		mixer.log("Client disconnected.",true);
+	});
 
 	mixer.log("Client connected.");
 };
@@ -184,6 +209,52 @@ mixer.ui.dom.masterSlider = document.getElementById("masterSlider");
 mixer.ui.dom.jukebox = document.getElementById("jukebox");
 mixer.ui.dom.musicVolume = document.getElementById("musicVolume");
 mixer.ui.dom.jukeYoutubeID = document.getElementById("jukeYoutubeID");
+mixer.ui.dom.notificationBar = document.getElementById("notificationBar");
+
+mixer.notify = function(message, autoclear, onClear){
+	let notification = document.createElement("div");
+	notification.className = "notification";
+	notification.appendChild(document.createTextNode(message));
+	notification.clearNotification = function(){
+		setTimeout(function(){
+			mixer.ui.dom.notificationBar.removeChild(notification);
+		},500);
+		notification.className = "notification notifHide";
+	}
+	if(autoclear){
+		setTimeout(function(){
+			if(onClear != undefined){
+				onClear();
+			}
+			notification.clearNotification();
+		},10000);
+	}
+	mixer.ui.dom.notificationBar.appendChild(notification);
+	return notification;
+};
+
+mixer.notifyImportant = function(message, autoclear, onClear){
+	let notification = document.createElement("div");
+	notification.className = "notification notifImportant";
+	notification.appendChild(document.createTextNode(message));
+	notification.clearNotification = function(){
+		setTimeout(function(){
+			mixer.ui.dom.notificationBar.removeChild(notification);
+		},500);
+		notification.className = "notification notifImportant notifHide";
+	}
+	if(autoclear){
+		setTimeout(function(){
+			if(onClear != undefined){
+				onClear();
+			}
+			notification.clearNotification();
+		},10000);
+	}
+	mixer.ui.dom.notificationBar.appendChild(notification);
+	return notification;
+};
+
 
 mixer.ui.hooks.setMasterVol= function(){
 	mixer.masterVol = mixer.ui.dom.masterSlider.value / 100;
@@ -481,7 +552,7 @@ var youtubeOnReady = function(event, sound, volume, time){
 	sound.dom.label.appendChild(document.createTextNode(sound.youtube.getVideoData().title));
 	sound.setVolume(volume);
 	sound.seek(time);
-	mixer.log(time);
+	//mixer.log(time);
 };
 
 var jukeYoutubeOnReady = function(event, sound, volume, time){
@@ -494,7 +565,7 @@ var jukeYoutubeOnReady = function(event, sound, volume, time){
 	sound.setVolume(volume);
 	sound.setVolume();
 	sound.isReady = true;
-	mixer.log(time);
+	//mixer.log(time);
 };
 
 var youtubeOnStateChange = function(event){

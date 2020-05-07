@@ -16,6 +16,9 @@ body{
 	user-select: none;
 }
 
+
+
+
 #back{
 	z-index: -100;
 	position:absolute;
@@ -409,10 +412,54 @@ td.vrspacer{
 	color: #000;
 	transition: background 0.2s;
 	display: inline-block;
+	min-width: 150px;
 }
 
 #idBox:hover{
 	background-color: #eee;
+}
+
+#statusBar{
+	background-color: rgba(0,0,0,0.2);
+	position:absolute;
+	display:flex;
+	left:0px;
+	right:0px;
+	top:0px;
+	height: 24px;
+	flex-wrap: wrap;
+}
+
+
+#statusPanel{
+	min-height: 24px;
+}
+
+#notificationBar{
+	min-height: 24px;
+	background-color: rgba(255,255,255,0.2);
+	flex-grow:1;
+	min-width: 200px;
+}
+
+.notification:nth-child(even){
+	background-color: rgba(0,0,0,0.5);
+}
+
+.notification{
+	background-color: rgba(0,0,0,0);
+	min-height:24px;
+	transition: all 0.5s;
+}
+
+.notifImportant{
+	background-color: rgba(150,50,50,0.5)!important;
+}
+
+.notifHide{
+	overflow:hidden;
+	min-height:0px;
+	height: 0px;
 }
 
 #errorCont{
@@ -449,7 +496,7 @@ td.vrspacer{
 	right: 0px;
 	height: 24px;
 	
-	background-color: rgba(50,50,50,1);
+	background-color: rgba(0,0,0,0.2);
 }
 
 a:link {
