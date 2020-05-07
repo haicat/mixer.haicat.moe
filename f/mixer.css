@@ -115,7 +115,7 @@ td.vrspacer{
 
 #jukebox{
 	position: fixed;
-	top: 0px;
+	top: 24px;
 	bottom: 0px;
 	width: 200px;
 	right: -200px;
