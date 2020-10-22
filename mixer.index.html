@@ -31,11 +31,6 @@
 						<td colspan="2"><input class = "horiSlider" id="masterSlider" type="range" min="0" max="100" value="70" /></td>
 					</tr>
 					<tr class = "hostOnly">
-						<td>Audio URL</td>
-						<td><input id="soundURL" type="text" class = "textbox" /></td>
-						<td><button onclick = "mixer.ui.hooks.addSound()">Add</button></td>
-					</tr>
-					<tr class = "hostOnly">
 						<td>YouTube URL</td>
 						<td><input id="youtubeID" type="text" class = "textbox" /></td>
 						<td><button onclick = "mixer.ui.hooks.addYoutube()">Add</button></td>
@@ -43,9 +38,6 @@
 					<tr class = "hostOnly">
 						<td>New Sound Volume</td>
 						<td colspan="2"><input class = "horiSlider" id="mixerAddSlider" type="range" min="0" max="100" value="70" /></td>
-					</tr>
-					<tr class = "hostOnly">
-						<td><button onclick = "mixer.ui.hooks.resync()">Resync</button></td>
 					</tr>
 				</table>
 			</div>
@@ -128,5 +120,5 @@
 			
 		
 	</body>
-	<script src = "f/mixer.js"></script>
+	<script type="module" src = "f/mixer.js"></script>
 </html>

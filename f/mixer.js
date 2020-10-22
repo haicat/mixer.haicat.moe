@@ -1,15 +1,17 @@
+(async function(){
+
 var mixer = {};
 window.mixer = mixer;
 
 mixer.siteUrl = "https://mixer.haicat.moe/";
-mixer.backgroundLast = 3; //last background image (highest number .png)
+mixer.maxTracks = 6;
+// number of seconds the syncing can be off by, below which it wont correct
+mixer.syncTolerance = 3;
+
 
 mixer.peer = new Peer();
 mixer.connection = undefined;
 mixer.on = {};
-mixer.ui = {};
-mixer.ui.dom = {};
-mixer.ui.hooks = {};
 
 
 mixer.role = undefined;
@@ -17,13 +19,18 @@ mixer.role = undefined;
 mixer.masterVol = 0.7;
 mixer.musicVol = 0.7;
 
-mixer.syncTolerance = 3; // number of seconds the syncing can be off by, below which it wont correct
 
 mixer.sounds = [];
 mixer.music = [];
 mixer.playing = false;
 mixer.trackNumber = 0;
 
+
+mixer.bind = (await import("./mixer.bind.js")).default;
+mixer.ui = (await import("./mixer.ui.js")).default;
+
+
+mixer.bind("musicVol",(v)=>{mixer.musicVol = v;mixer.ui.dom.musicVolume.value = v*100;});
 
 mixer.log = function(text){
 	console.log(text);
@@ -51,14 +58,19 @@ mixer.host = function(){
 	mixer.peer.on("connection", mixer.on.connection);
 	mixer.peer.on("disconnected", mixer.on.serverDisconnect);
 	mixer.role = "host";
+	for(let i = 0; i < mixer.maxTracks; i++){mixer.addTrack();};
+	mixer.bind.bindGlobal(mixer.on.hostBind);
 	
 	for(let i = 0; i < mixer.ui.dom.hostOnly.length; i++){
 		mixer.ui.dom.hostOnly[i].setAttribute("class", "hostOnly");
 	}
 	
-	mixer.ui.showMain();
+	mixer.ui.showMain(mixer.peer.id,mixer.hostID,mixer.role,mixer.siteUrl);
 };
 
+mixer.on.hostBind = function(key, value){
+	mixer.sendData({command:"set", key: key, value: value});
+};
 
 mixer.on.serverConnect = function(){
 	mixer.notify("Connected to the signaling server.", true);
@@ -97,13 +109,13 @@ mixer.on.hostError = function(err){
 mixer.on.open = function(){
 	mixer.log("Connected.");
 	mixer.role = "client";
-	
+	for(let i = 0; i < mixer.maxTracks; i++){mixer.addTrack();};
 	for(let i = 0; i < mixer.ui.dom.hostOnly.length; i++){
 		mixer.ui.dom.hostOnly[i].setAttribute("class", "hostOnly hidden");
 	}
 	
 	mixer.ui.hideLoader();
-	mixer.ui.showMain();
+	mixer.ui.showMain(mixer.peer.id,mixer.hostID,mixer.role,mixer.siteUrl);
 };
 
 mixer.sendData = function(data){
@@ -118,37 +130,21 @@ mixer.sendData = function(data){
 mixer.on.clientData = function(data){
 	if(data.commend == "undefined"){return;};
 	switch(data.command.trim()){
-		case "add":
-			mixer.addSound(data.soundURL, data.soundVolume, data.timeStamp, true);
-			break;
-		case "volume":
-			mixer.setVolume(data.soundIndex, data.soundVolume);
-			break;
-		case "remove":
-			mixer.removeSound(mixer.sounds[data.soundIndex], true);
-			break;
-		case "addYoutube":
-			mixer.addYoutube(data.videoID, data.soundVolume, data.timeStamp, true);
-			break;
-		case "seek":
-			mixer.seek(data.soundIndex, data.timeStamp, true);
-			break;
 		case "jukeAddYoutube":
 			mixer.jukeAddYoutube(data.videoID, data.timeStamp, true)
 			break;
-		case "playTrack":
-			mixer.playTrack(data.soundIndex,true);
-			break;
-		case "removeTrack":
-			mixer.removeTrack(mixer.music[data.soundIndex], true);
-			break;
 		case "jukeInitial":
 			mixer.jukeInitial(data.playing,data.trackNumber);
+			break;
+		case "set":
+			mixer.bind.set(data.key, data.value);
 			break;
 		default:
 			mixer.log("Unknown host command: "+data.command);
 	}
 };
+
+
 
 mixer.on.connection = function(conn){
 	conn.on("data", function(data){
@@ -156,11 +152,16 @@ mixer.on.connection = function(conn){
 	});
 	conn.on("open", function(){
 		console.log("Sending channels:");
-		for(let sound in mixer.sounds){
+		/*for(let sound in mixer.sounds){
 			console.log(sound);
 			mixer.sounds[sound].send(conn);
 			//conn.send({command:"add", soundURL: mixer.sounds[sound].url});
+		}*/
+		
+		for(let prop in mixer.bind.properties){
+			conn.send({command:"set", key: prop, value: mixer.bind.get(prop)});
 		}
+		
 		console.log("Sending jukebox:");
 		for(let sound in mixer.music){
 			console.log(sound);
@@ -179,39 +180,9 @@ mixer.on.connection = function(conn){
 	mixer.log("Client connected.");
 };
 
-mixer.resync = function(){
-	if(mixer.role != "host"){return;};
-	for(let sound in mixer.sounds){
-		console.log("Syncing "+sound);
-		mixer.seek(sound, mixer.sounds[sound].getTime(), false, true)
-			//conn.send({command:"add", soundURL: mixer.sounds[sound].url});
-	}
-}
-
-
-mixer.ui.dom.idBox = document.getElementById("idBox");
-mixer.ui.dom.connectBox = document.getElementById("connectBox");
-mixer.ui.dom.loader = document.getElementById("loader");
-mixer.ui.dom.errorBox = document.getElementById("errorBox");
-mixer.ui.dom.errorContent = document.getElementById("errorContent");
-mixer.ui.dom.mixerBox = document.getElementById("mixerBox");
-mixer.ui.dom.soundCont = document.getElementById("soundCont");
-mixer.ui.dom.soundURL = document.getElementById("soundURL");
-mixer.ui.dom.youtubeID = document.getElementById("youtubeID");
-mixer.ui.dom.joinID = document.getElementById("joinID");
-mixer.ui.dom.mixerAddSlider = document.getElementById("mixerAddSlider");
-mixer.ui.dom.joinLink = document.getElementById("joinLink");
-mixer.ui.dom.autoConnectBox = document.getElementById("autoConnectBox");
-mixer.ui.dom.errorCont = document.getElementById("errorCont");
-mixer.ui.dom.back = document.getElementById("back");
-mixer.ui.dom.hostOnly = document.getElementsByClassName("hostOnly");
-mixer.ui.dom.masterSlider = document.getElementById("masterSlider");
-mixer.ui.dom.jukebox = document.getElementById("jukebox");
-mixer.ui.dom.musicVolume = document.getElementById("musicVolume");
-mixer.ui.dom.jukeYoutubeID = document.getElementById("jukeYoutubeID");
-mixer.ui.dom.notificationBar = document.getElementById("notificationBar");
 
 mixer.notify = function(message, autoclear, onClear){
+	if(autoclear === undefined){autoclear = true;};
 	let notification = document.createElement("div");
 	notification.className = "notification";
 	notification.appendChild(document.createTextNode(message));
@@ -234,6 +205,7 @@ mixer.notify = function(message, autoclear, onClear){
 };
 
 mixer.notifyImportant = function(message, autoclear, onClear){
+	if(autoclear === undefined){autoclear = true;};
 	let notification = document.createElement("div");
 	notification.className = "notification notifImportant";
 	notification.appendChild(document.createTextNode(message));
@@ -255,6 +227,17 @@ mixer.notifyImportant = function(message, autoclear, onClear){
 	return notification;
 };
 
+mixer.playTrack = function(ytid, vol){
+	for(let sound of mixer.sounds){
+		if(!sound.visible){
+			sound.load(ytid);
+			sound.setVolume(vol);
+			return;
+		}
+	}
+	mixer.ui.showError("Max number of tracks reached.");
+};
+
 
 mixer.ui.hooks.setMasterVol= function(){
 	mixer.masterVol = mixer.ui.dom.masterSlider.value / 100;
@@ -264,7 +247,8 @@ mixer.ui.hooks.setMasterVol= function(){
 };
 
 mixer.ui.hooks.setMusicVol = function(){
-	mixer.musicVol = mixer.ui.dom.musicVolume.value / 100;
+	//mixer.musicVol = mixer.ui.dom.musicVolume.value / 100;
+	mixer.bind.set("musicVol",mixer.ui.dom.musicVolume.value / 100);
 	for(let sound in mixer.music){
 		mixer.music[sound].setVolume();
 	}
@@ -281,59 +265,7 @@ mixer.ui.dom.musicVolume.addEventListener("input", function(){
 mixer.ui.hooks.setMasterVol();
 mixer.ui.hooks.setMusicVol();
 
-mixer.ui.errorReconnect = false;
 
-var backIndex = Math.floor(Math.random() * mixer.backgroundLast) + 1;
-mixer.ui.dom.back.style.backgroundImage = "url('f/backgrounds/"+backIndex+".png')";
-
-
-mixer.ui.hideConnectBox = function(){
-	mixer.ui.dom.connectBox.className = "popup panel hidden";
-};
-
-mixer.ui.showConnectBox = function(){
-	mixer.ui.dom.connectBox.className = "popup panel";
-};
-
-mixer.ui.showLoader = function(){
-	mixer.ui.dom.loader.className = "popup panel";
-};
-
-mixer.ui.hideLoader = function(){
-	mixer.ui.dom.loader.className = "popup panel hidden";
-};
-
-mixer.ui.showMain = function(){
-	mixer.ui.dom.mixerBox.className = "panel";
-	mixer.ui.dom.jukebox.className = "panel";
-	mixer.ui.updateID(mixer.peer.id);
-};
-
-mixer.ui.hideMain = function(){
-	mixer.ui.dom.mixerBox.className = "panel hidden";
-	mixer.ui.dom.jukebox.className = "panel hidden";
-};
-
-mixer.ui.updateID = function(id){
-	mixer.ui.dom.idBox.innerHTML = "";
-	mixer.ui.dom.idBox.appendChild(document.createTextNode(id));
-	
-	mixer.ui.dom.joinLink.innerHTML = "";
-	if(mixer.role == "host"){
-		mixer.ui.dom.joinLink.appendChild(document.createTextNode(mixer.siteUrl+"?join="+id));
-	}
-	if(mixer.role=="client"){
-		mixer.ui.dom.joinLink.appendChild(document.createTextNode(mixer.siteUrl+"?join="+mixer.hostID));
-	}
-};
-
-mixer.ui.showConnectConfirm = function(){
-	mixer.ui.dom.autoConnectBox.className = "popup panel";
-}
-
-mixer.ui.hideConnectConfirm = function(){
-	mixer.ui.dom.autoConnectBox.className = "popup panel hidden";
-}
 
 mixer.ui.hooks.acYes = function(){
 	mixer.ui.hideConnectConfirm();
@@ -347,22 +279,6 @@ mixer.ui.hooks.acNo = function(){
 	mixer.ui.showConnectBox();
 }
 
-
-mixer.ui.showError = function(err, disconnect){
-	if(disconnect==true){
-		mixer.ui.errorReconnect = true;
-		mixer.ui.hideMain();
-	}
-	mixer.ui.dom.errorCont.className = "";
-	//mixer.ui.dom.errorBox.className = "popup panel";
-	mixer.ui.dom.errorContent.innerHTML = "";
-	mixer.ui.dom.errorContent.appendChild(document.createTextNode(err));
-};
-
-mixer.ui.hideError = function(){
-    mixer.ui.dom.errorCont.className = "fadeOut";
-	//mixer.ui.dom.errorBox.className = "popup panel hidden";
-};
 
 mixer.ui.hooks.errorOK = function(){
 	mixer.ui.hideError();
@@ -385,89 +301,6 @@ mixer.ui.hooks.host = function(){
 
 
 
-mixer.removeSound = function(sound, hostCommand){
-	if(hostCommand == undefined){hostCommand = false;};
-	if(!hostCommand){
-		if(mixer.role == "client"){
-			return;
-		}
-		if(mixer.role == "host"){
-			mixer.sendData({command:"remove",soundIndex:mixer.sounds.indexOf(sound)});
-		}
-	}
-	sound.dom.channel.parentNode.removeChild(sound.dom.channel);
-	sound.dom.slider.parentNode.removeChild(sound.dom.slider);
-	sound.dom.del.parentNode.removeChild(sound.dom.del);
-	//sound.dom.innerLabel.parentNode.removeChild(sound.dom.innerLabel);
-	sound.dom.label.parentNode.removeChild(sound.dom.label);
-	
-	if(sound.youtube != undefined){
-		sound.youtube.destroy();
-	}
-	
-	//if(sound.dom.sound.parentNode != null){
-		sound.dom.sound.parentNode.removeChild(sound.dom.sound);
-	//}
-	
-	sound.dom.channel = undefined;
-	sound.dom.slider = undefined;
-	sound.dom.del = undefined;
-	//sound.dom.innerLabel = undefined
-	sound.dom.label = undefined;
-	sound.dom.sound = undefined;
-	
-	mixer.sounds.splice(mixer.sounds.indexOf(sound),1);
-};
-
-
-mixer.removeTrack = function(sound, hostCommand){
-	if(hostCommand == undefined){hostCommand = false;};
-	
-	let trackNo = mixer.music.indexOf(sound);
-	
-	if(!hostCommand){
-		if(mixer.role == "client"){
-			return;
-		}
-		if(mixer.role == "host"){
-			mixer.sendData({command:"removeTrack",soundIndex:trackNo});
-		}
-	}
-	
-	
-	
-	sound.dom.channel.parentNode.removeChild(sound.dom.channel);
-	sound.dom.del.parentNode.removeChild(sound.dom.del);
-	sound.dom.label.parentNode.removeChild(sound.dom.label);
-	
-	if(sound.youtube != undefined){
-		sound.youtube.destroy();
-	}
-	
-	sound.dom.sound.parentNode.removeChild(sound.dom.sound);
-	
-	sound.dom.channel = undefined;
-	sound.dom.del = undefined;
-	sound.dom.label = undefined;
-	sound.dom.sound = undefined;
-	mixer.music.splice(trackNo,1);
-	
-	if(mixer.trackNumber > trackNo){
-		mixer.trackNumber--;
-	}
-	else if((mixer.trackNumber == trackNo) && mixer.playing){
-		mixer.playTrack(mixer.trackNumber);
-	}
-	
-};
-
-mixer.setVolume = function(index, vol){
-	//mixer.sounds[index].dom.sound.volume = vol;
-	//mixer.sounds[index].dom.slider.value = vol * 100;
-	mixer.sounds[index].dom.slider.value = vol;
-	mixer.sounds[index].setVolume(vol);
-};
-
 mixer.seek = function(index, time, hostCommand, sendOnly){
 	if(hostCommand == undefined){hostCommand = false;};
 	if(sendOnly == undefined){sendOnly = false;};
@@ -483,77 +316,30 @@ mixer.seek = function(index, time, hostCommand, sendOnly){
 	mixer.sounds[index].seek(time);
 };
 
-mixer.ui.hooks.setVolume = function(sound){
-	if(mixer.role == "host"){
-			mixer.sendData({command:"volume",soundIndex: mixer.sounds.indexOf(sound),soundVolume:sound.dom.slider.value});
-	}
-	//sound.dom.sound.volume = sound.dom.slider.value / 100;
-	sound.setVolume(sound.dom.slider.value);
-};
-
-mixer.playTrack = function(index, hostCommand){
-	if(mixer.music.length == 0){return;};
-	if(hostCommand == undefined){hostCommand = false;};
-
-	if(!hostCommand){
-		if(mixer.role == "client"){
-			return;
-		}
-		if(mixer.role == "host"){
-			mixer.sendData({command:"playTrack", soundIndex: index});
-		}
-	}
-	
-	for(let sound in mixer.music){
-		mixer.music[sound].pause();
-	}
-	
-	if(index == null){
-		mixer.playing = false;
-		return;
-	}
-	
-	if(index >= mixer.music.length){
-		index = 0;
-	}
-	
-	mixer.music[index].play();
-	mixer.trackNumber = index;
-	mixer.playing = true;
-}
 
 mixer.jukeInitial = function(playing,trackNumber){
 	mixer.playing = playing;
 	mixer.trackNumber = trackNumber;
 	if(mixer.playing){
-		mixer.playTrack(mixer.trackNumber);
+		//mixer.playTrack(mixer.trackNumber);
 	}
 }
 
 
 mixer.ui.hooks.jukePlay = function(){
-	mixer.playTrack(mixer.trackNumber);
+	//mixer.playTrack(mixer.trackNumber);
 }
 
 mixer.ui.hooks.jukePause = function(){
-	mixer.playTrack(null);
+	//mixer.playTrack(null);
 }
 
 mixer.ui.hooks.jukeSkip = function(){
 	mixer.trackNumber++;
-	mixer.playTrack(mixer.trackNumber);
+	//mixer.playTrack(mixer.trackNumber);
 }
 
 
-
-var youtubeOnReady = function(event, sound, volume, time){
-	event.target.playVideo();
-	sound.dom.label.innerHTML = "";
-	sound.dom.label.appendChild(document.createTextNode(sound.youtube.getVideoData().title));
-	sound.setVolume(volume);
-	sound.seek(time);
-	//mixer.log(time);
-};
 
 var jukeYoutubeOnReady = function(event, sound, volume, time){
 	if(mixer.playing && (mixer.trackNumber == mixer.music.indexOf(sound))){
@@ -568,361 +354,114 @@ var jukeYoutubeOnReady = function(event, sound, volume, time){
 	//mixer.log(time);
 };
 
-var youtubeOnStateChange = function(event){
-	if(event.data === YT.PlayerState.ENDED){
-		event.target.playVideo();
+
+mixer.addTrack = function(){
+	let sound = {};
+	sound.id = (mixer.sounds.push(sound)-1);
+	sound.ready = false;
+	sound.visible = false;
+	sound.dom = mixer.ui.createChannelYoutube(mixer.role, sound.id, {
+		'onReady': function(event){
+			sound.ready = true;
+			//event.target.playVideo();
+			//sound.dom.label.innerHTML = "";
+			//sound.dom.label.appendChild(document.createTextNode(sound.youtube.getVideoData().title));
+			//sound.setVolume(volume);
+			//sound.seek(time);
+			//mixer.log(time);
+			mixer.bind(sound.key("volume"),(v)=>{sound.setVolume(v,true);});
+			mixer.bind(sound.key("videoID"),(v)=>{sound.load(v,true);});
+			mixer.bind(sound.key("time"),(v)=>{sound.seek(v,true);});
+		},
+		'onStateChange': function(event){
+			if(event.data === YT.PlayerState.ENDED){
+				event.target.playVideo();
+			}
+		},
+		'onError': function(){
+			dom.channel.className = "mixerChannel channelError";
+		}
+	});
+	
+	sound.key = function(sub){
+		return "mixerTrack"+sound.id+sub;
+	};
+	
+	//getters
+	sound.getTime = function(){
+		if(!sound.ready){
+			return 0;
+		}
+		return sound.dom.youtube.getCurrentTime();
+	}
+	
+	sound.getDuration = function(){
+		if(!sound.ready){
+			return 0;
+		}
+		return sound.dom.youtube.getDuration();
+	}
+	
+	
+	//setters
+	sound.setVolume = function(vol, suppressBind){
+		if(sound.ready){
+			sound.dom.youtube.setVolume(vol * mixer.masterVol);
+		}
 		
+		if(suppressBind != true){
+			mixer.bind.set(sound.key("volume"), vol);
+		}
+		sound.dom.slider.value = vol;
+	}
+	
+	
+	sound.seek = function(time, suppressBind){
+		let diff = Math.abs(time - sound.getTime());
+		if((diff > mixer.syncTolerance) && sound.ready){
+			sound.dom.youtube.seekTo(time, true);
+		}
+		if(suppressBind != true){
+			mixer.bind.set(sound.key("time"), time);
+		}
+	}
+	
+	
+	sound.load = function(videoID, suppressBind){
+		sound.visible = (videoID!=null);
+		sound.dom.channel.className = (videoID==null)?"mixerChannel hidden":"mixerChannel";
+		if(sound.ready){
+			if(videoID == null){
+				sound.dom.youtube.stopVideo();
+			}else{
+				sound.dom.youtube.loadVideoById(videoID);
+			}
+		}
+		if(suppressBind != true){
+			mixer.bind.set(sound.key("videoID"), videoID);
+		}
+	};
+	
+	
+
+	
+	sound.send = function(conn){
+		//conn.send({command:"track", id: sound.id, volume: sound.dom.slider.value, time: sound.getTime() });
+	}
+	
+	sound.dom.slider.addEventListener("input", function(){
+		//mixer.ui.hooks.setVolume(sound);
+		mixer.bind.set(sound.key("volume"),sound.dom.slider.value);
+		
+	});
+	if(mixer.role == "host"){
+		sound.dom.del.addEventListener("click", function(){
+			sound.load(null);
+			//mixer.removeSound(sound);
+		});
 	}
 };
 
-var jukeYoutubeOnStateChange = function(event){
-	if(mixer.role == "client"){
-		return;
-	}
-	if(event.data === YT.PlayerState.ENDED){
-		mixer.trackNumber++;
-		mixer.playTrack(mixer.trackNumber);
-	}
-}
-
-mixer.jukeAddYoutube = function(id, time, hostCommand){
-	var existing = document.getElementById(id);
-	if(time==undefined){time=0;};
-	if(existing != null){
-		mixer.ui.showError("Cannot add the same YouTube video twice.", false);
-		return;
-	}
-	if(hostCommand == undefined){hostCommand = false;};
-	if(!hostCommand){
-		if(mixer.role == "client"){
-			return;
-		}
-		if(mixer.role == "host"){
-			mixer.sendData({command:"jukeAddYoutube", timeStamp: time, videoID:id});
-		}
-	}
-	
-	let sound = {};
-	sound.id = id;
-	sound.isReady = false;
-	sound.dom = {};
-	sound.dom.sound = document.createElement("div");
-	sound.dom.sound.id = id;
-	
-	mixer.ui.dom.soundCont.appendChild(sound.dom.sound);
-	
-	sound.youtube = new YT.Player(id,{
-		height: '390',
-		width: '640',
-		videoId: id,
-		events: {
-			'onReady': function(event){
-				jukeYoutubeOnReady(event,sound,mixer.musicVol,time);
-			},
-			'onStateChange': jukeYoutubeOnStateChange,
-            'onError': function(){
-                sound.dom.channel.className = "jukeTrack jukeError";
-            }
-		}
-	});
-	
-	sound.play = function(){
-		sound.dom.channel.className = "jukeTrack playing";
-		if(!sound.isReady){return;};
-		sound.youtube.seekTo(0, true);
-		sound.youtube.playVideo();
-	}
-	
-	sound.pause = function(){
-		sound.youtube.pauseVideo();
-		sound.dom.channel.className = "jukeTrack";
-	}
-	
-	sound.setVolume = function(){
-		sound.youtube.setVolume(mixer.musicVol * 100);
-	}
-	
-	sound.seek = function(time){
-		let diff = Math.abs(time - sound.getTime());
-		if(diff > mixer.syncTolerance){
-			sound.youtube.seekTo(time, true);
-		}
-	}
-	
-	sound.getTime = function(){
-		return sound.youtube.getCurrentTime();
-	}
-	
-	sound.getDuration = function(){
-		return sound.youtube.getDuration();
-	}
-
-	sound.dom.channel = document.createElement("div");
-	sound.dom.channel.className = "jukeTrack";
-	
-	sound.dom.channel.ondblclick = function(){
-		if(mixer.role=="client"){return;};
-		mixer.playTrack(mixer.music.indexOf(sound));
-	}
-	
-	sound.dom.del = document.createElement("button");
-	sound.dom.del.className = "jukeDelete";
-	if(mixer.role == "client"){
-		sound.dom.del.className += " hidden";
-	}
-	
-	sound.dom.label = document.createElement("div");
-	sound.dom.label.className = "jukeLabel noSelect";
-	
-	sound.dom.label.addEventListener('contextmenu', function(event){
-		sound.dom.label.contentEditable = "true";
-		sound.dom.label.focus();
-		sound.dom.label.className = "jukeLabel";
-		event.preventDefault();
-	});
-	
-	sound.dom.label.addEventListener('focusout', function(event){
-		sound.dom.label.contentEditable = "false";
-		sound.dom.label.className = "jukeLabel noSelect";
-	});
-	
-	sound.dom.label.appendChild(document.createTextNode(id));
-	//sound.dom.label.contentEditable = "true";
-	
-	sound.dom.channel.appendChild(sound.dom.del);
-	sound.dom.channel.appendChild(sound.dom.label);
-	
-	
-	sound.send = function(conn){
-		conn.send({command:"jukeAddYoutube", videoID: sound.id, timeStamp: sound.getTime() });
-	}
-	
-	mixer.music.push(sound);
-	
-	sound.dom.del.addEventListener("click", function(){
-		mixer.removeTrack(sound);
-	});
-	
-	mixer.ui.dom.jukebox.appendChild(sound.dom.channel);
-	
-}
-
-mixer.addYoutube = function(id, volume, time, hostCommand){
-	var existing = document.getElementById(id);
-	if(existing != null){
-		mixer.ui.showError("Cannot add the same YouTube video twice.", false);
-		return;
-	}
-	if(hostCommand == undefined){hostCommand = false;};
-	if(!hostCommand){
-		if(mixer.role == "client"){
-			return;
-		}
-		if(mixer.role == "host"){
-			mixer.sendData({command:"addYoutube", soundVolume: volume, timeStamp: time, videoID:id});
-		}
-	}
-	
-	let sound = {};
-	sound.id = id;
-	sound.dom = {};
-	sound.dom.sound = document.createElement("div");
-	sound.dom.sound.id = id;
-	
-	mixer.ui.dom.soundCont.appendChild(sound.dom.sound);
-	
-	sound.youtube = new YT.Player(id,{
-		height: '390',
-		width: '640',
-		videoId: id,
-		events: {
-			'onReady': function(event){youtubeOnReady(event, sound, volume, time);},
-			'onStateChange': youtubeOnStateChange,
-            'onError': function(){
-                sound.dom.channel.className = "mixerChannel channelError";
-            }
-		}
-	});
-	
-	/*sound.dom.sound.src = url;
-	sound.dom.sound.loop = true;
-	sound.dom.sound.autoplay = true;
-	sound.dom.sound.volume = 0.7;*/
-	
-	//sound.youtube.setVolume(70);
-	
-	sound.setVolume = function(vol){
-		sound.youtube.setVolume(vol * mixer.masterVol);
-	}
-	
-	sound.seek = function(time){
-		let diff = Math.abs(time - sound.getTime());
-		if(diff > mixer.syncTolerance){
-			sound.youtube.seekTo(time, true);
-		}
-	}
-	
-	sound.getTime = function(){
-		return sound.youtube.getCurrentTime();
-	}
-	
-	sound.getDuration = function(){
-		return sound.youtube.getDuration();
-	}
-
-	sound.dom.channel = document.createElement("div");
-	sound.dom.channel.className = "mixerChannel";
-	
-	sound.dom.slider = document.createElement("input");
-	sound.dom.slider.className = "mixerSlider";
-	sound.dom.slider.type = "range";
-	sound.dom.slider.setAttribute("orient", "vertical");
-	sound.dom.slider.min = 0;
-	sound.dom.slider.max = 100;
-	sound.dom.slider.value = volume;
-	
-	sound.dom.del = document.createElement("button");
-	sound.dom.del.className = "mixerDelete";
-	if(mixer.role == "client"){
-		sound.dom.del.className += " hidden";
-	}
-	
-	sound.dom.label = document.createElement("div");
-	sound.dom.label.className = "mixerLabel";
-	
-	sound.dom.label.appendChild(document.createTextNode(id));
-	sound.dom.label.contentEditable = "true";
-	
-	/*
-	sound.dom.innerLabel = document.createElement("span");
-	sound.dom.innerLabel.className = "mixerLabelInner";
-	sound.dom.innerLabel.appendChild(document.createTextNode(id));
-	sound.dom.innerLabel.contentEditable = "true";
-	
-	sound.dom.label.appendChild(sound.dom.innerLabel);
-	*/
-	
-	sound.dom.channel.appendChild(sound.dom.slider);
-	sound.dom.channel.appendChild(sound.dom.del);
-	sound.dom.channel.appendChild(sound.dom.label);
-	
-	
-	sound.send = function(conn){
-		conn.send({command:"addYoutube", videoID: sound.id, soundVolume: sound.dom.slider.value, timeStamp: sound.getTime() /*sound.youtube.getVolume()*/});
-	}
-	
-	mixer.sounds.push(sound);
-	
-	
-	sound.dom.slider.addEventListener("input", function(){
-		mixer.ui.hooks.setVolume(sound);
-	});
-	
-	sound.dom.del.addEventListener("click", function(){
-		mixer.removeSound(sound);
-	});
-	
-	mixer.ui.dom.mixerBox.appendChild(sound.dom.channel);
-	//mixer.ui.dom.soundCont.appendChild(sound.dom.sound);
-}
-
-mixer.addSound = function(url, volume, time, hostCommand){
-	if(hostCommand == undefined){hostCommand = false;};
-	if(!hostCommand){
-		if(mixer.role == "client"){
-			return;
-		}
-		if(mixer.role == "host"){
-			mixer.sendData({command:"add", soundVolume: volume, timeStamp: time, soundURL:url});
-		}
-	}
-	let sound = {};
-	sound.url = url;
-	sound.dom = {};
-	sound.dom.sound = document.createElement("AUDIO");
-	sound.dom.sound.src = url;
-	sound.dom.sound.loop = true;
-	sound.dom.sound.autoplay = true;
-	sound.dom.sound.volume = volume/100;
-	sound.dom.sound.currentTime = time;
-	
-	sound.setVolume = function(vol){
-		sound.dom.sound.volume = (vol/100) * mixer.masterVol;
-	}
-	
-	sound.seek = function(time){
-		let diff = Math.abs(time - sound.getTime());
-		if(diff > mixer.syncTolerance){
-			sound.dom.sound.currentTime = time;
-		}
-	}
-	
-	sound.getTime = function(){
-		return sound.dom.sound.currentTime;
-	}
-	
-	sound.getDuration = function(){
-		return sound.dom.sound.duration;
-	}
-
-	sound.dom.channel = document.createElement("div");
-	sound.dom.channel.className = "mixerChannel";
-    
-    sound.dom.sound.onerror = function(){
-        sound.dom.channel.className = "mixerChannel channelError";
-    }
-	
-	sound.dom.slider = document.createElement("input");
-	sound.dom.slider.className = "mixerSlider";
-	sound.dom.slider.type = "range";
-	sound.dom.slider.setAttribute("orient", "vertical");
-	sound.dom.slider.min = 0;
-	sound.dom.slider.max = 100;
-	sound.dom.slider.value = volume;
-	
-	sound.dom.del = document.createElement("button");
-	sound.dom.del.className = "mixerDelete";
-	if(mixer.role == "client"){
-		sound.dom.del.className += " hidden";
-	}
-	
-	sound.dom.label = document.createElement("div");
-	sound.dom.label.className = "mixerLabel";
-	
-	sound.dom.label.appendChild(document.createTextNode(url));
-	sound.dom.label.contentEditable = "true";
-	
-	/*
-	sound.dom.innerLabel = document.createElement("span");
-	sound.dom.innerLabel.className = "mixerLabelInner";
-	sound.dom.innerLabel.appendChild(document.createTextNode(url));
-	sound.dom.innerLabel.contentEditable = "true";
-	
-	sound.dom.label.appendChild(sound.dom.innerLabel);
-	*/
-	
-	sound.dom.channel.appendChild(sound.dom.slider);
-	sound.dom.channel.appendChild(sound.dom.del);
-	sound.dom.channel.appendChild(sound.dom.label);
-	
-	sound.send = function(conn){
-		conn.send({command:"add", soundURL: sound.url, soundVolume: sound.dom.slider.value, timeStamp: sound.getTime()/*sound.dom.sound.volume*100*/});
-	}
-	
-	mixer.sounds.push(sound);
-	
-	
-	sound.dom.slider.addEventListener("input", function(){
-		mixer.ui.hooks.setVolume(sound);
-	});
-	
-	sound.dom.del.addEventListener("click", function(){
-		mixer.removeSound(sound);
-	});
-	
-	mixer.ui.dom.mixerBox.appendChild(sound.dom.channel);
-	mixer.ui.dom.soundCont.appendChild(sound.dom.sound);
-};
 
 //from https://stackoverflow.com/questions/3452546/how-do-i-get-the-youtube-video-id-from-a-url
 var parseYoutube = function(url){
@@ -931,10 +470,6 @@ var parseYoutube = function(url){
 	return (match&&match[7].length==11)? match[7] : false;
 }
 
-mixer.ui.hooks.addSound = function(){
-	mixer.addSound(mixer.ui.dom.soundURL.value, mixer.ui.dom.mixerAddSlider.value);
-	mixer.ui.dom.soundURL.value = "";
-};
 
 mixer.ui.hooks.addYoutube = function(){
 	var ytid = parseYoutube(mixer.ui.dom.youtubeID.value);
@@ -942,7 +477,8 @@ mixer.ui.hooks.addYoutube = function(){
 		mixer.ui.showError("Invalid YouTube Link", false);
 		return;
 	}
-	mixer.addYoutube(ytid, mixer.ui.dom.mixerAddSlider.value);
+	//mixer.addYoutube(ytid, mixer.ui.dom.mixerAddSlider.value);
+	mixer.playTrack(ytid, mixer.ui.dom.mixerAddSlider.value);
 	mixer.ui.dom.youtubeID.value = "";
 }
 
@@ -971,11 +507,7 @@ mixer.ui.hooks.jukeAddYoutube = function(){
 		return;
 	}
 	mixer.ui.dom.jukeYoutubeID.value = "";
-}
-
-mixer.ui.hooks.resync = function(){
-	mixer.resync();
-}
+};
 
 mixer.init = function(){
 	var url = new URL(window.location.href);
@@ -993,3 +525,4 @@ mixer.init = function(){
 };
 
 mixer.init();
+})();
