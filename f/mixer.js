@@ -407,6 +407,9 @@ mixer.addTrack = function(){
 	sound.setVolume = function(vol, suppressBind){
 		if(sound.ready){
 			sound.dom.youtube.setVolume(vol * mixer.masterVol);
+			if(sound.dom.youtube.isMuted()){
+				sound.dom.youtube.unMute();
+			}
 		}
 		
 		if(suppressBind != true){
