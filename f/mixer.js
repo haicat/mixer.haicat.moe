@@ -21,16 +21,17 @@ mixer.musicVol = 0.7;
 
 
 mixer.sounds = [];
-mixer.music = [];
-mixer.playing = false;
-mixer.trackNumber = 0;
 
+mixer.juke = {};
+mixer.juke.listString = "";
+mixer.juke.music = [];
+mixer.juke.resumeTrack = null;
 
 mixer.bind = (await import("./mixer.bind.js")).default;
 mixer.ui = (await import("./mixer.ui.js")).default;
 
 
-mixer.bind("musicVol",(v)=>{mixer.musicVol = v;mixer.ui.dom.musicVolume.value = v*100;});
+
 
 mixer.log = function(text){
 	console.log(text);
@@ -130,12 +131,6 @@ mixer.sendData = function(data){
 mixer.on.clientData = function(data){
 	if(data.commend == "undefined"){return;};
 	switch(data.command.trim()){
-		case "jukeAddYoutube":
-			mixer.jukeAddYoutube(data.videoID, data.timeStamp, true)
-			break;
-		case "jukeInitial":
-			mixer.jukeInitial(data.playing,data.trackNumber);
-			break;
 		case "set":
 			mixer.bind.set(data.key, data.value);
 			break;
@@ -151,26 +146,9 @@ mixer.on.connection = function(conn){
 		mixer.log(data);
 	});
 	conn.on("open", function(){
-		console.log("Sending channels:");
-		/*for(let sound in mixer.sounds){
-			console.log(sound);
-			mixer.sounds[sound].send(conn);
-			//conn.send({command:"add", soundURL: mixer.sounds[sound].url});
-		}*/
-		
 		for(let prop in mixer.bind.properties){
 			conn.send({command:"set", key: prop, value: mixer.bind.get(prop)});
 		}
-		
-		console.log("Sending jukebox:");
-		for(let sound in mixer.music){
-			console.log(sound);
-			mixer.music[sound].send(conn);
-		}
-		conn.send({command:"jukeInitial",playing:mixer.playing,trackNumber:mixer.trackNumber});
-		/*if(mixer.playing){
-			conn.send({command:"playTrack", soundIndex: mixer.trackNumber});
-		}*/
 	});
 	
 	conn.on("close", function(){
@@ -246,14 +224,6 @@ mixer.ui.hooks.setMasterVol= function(){
 	}
 };
 
-mixer.ui.hooks.setMusicVol = function(){
-	//mixer.musicVol = mixer.ui.dom.musicVolume.value / 100;
-	mixer.bind.set("musicVol",mixer.ui.dom.musicVolume.value / 100);
-	for(let sound in mixer.music){
-		mixer.music[sound].setVolume();
-	}
-};
-
 mixer.ui.dom.masterSlider.addEventListener("input", function(){
 	mixer.ui.hooks.setMasterVol();
 });
@@ -262,8 +232,7 @@ mixer.ui.dom.musicVolume.addEventListener("input", function(){
 	mixer.ui.hooks.setMusicVol();
 });
 
-mixer.ui.hooks.setMasterVol();
-mixer.ui.hooks.setMusicVol();
+
 
 
 
@@ -300,61 +269,6 @@ mixer.ui.hooks.host = function(){
 };
 
 
-
-mixer.seek = function(index, time, hostCommand, sendOnly){
-	if(hostCommand == undefined){hostCommand = false;};
-	if(sendOnly == undefined){sendOnly = false;};
-	if(!hostCommand){
-		if(mixer.role == "client"){
-			return;
-		}
-		if(mixer.role == "host"){
-			mixer.sendData({command:"seek", soundIndex: index, timeStamp:time});
-		}
-	}
-	if(sendOnly){return;};
-	mixer.sounds[index].seek(time);
-};
-
-
-mixer.jukeInitial = function(playing,trackNumber){
-	mixer.playing = playing;
-	mixer.trackNumber = trackNumber;
-	if(mixer.playing){
-		//mixer.playTrack(mixer.trackNumber);
-	}
-}
-
-
-mixer.ui.hooks.jukePlay = function(){
-	//mixer.playTrack(mixer.trackNumber);
-}
-
-mixer.ui.hooks.jukePause = function(){
-	//mixer.playTrack(null);
-}
-
-mixer.ui.hooks.jukeSkip = function(){
-	mixer.trackNumber++;
-	//mixer.playTrack(mixer.trackNumber);
-}
-
-
-
-var jukeYoutubeOnReady = function(event, sound, volume, time){
-	if(mixer.playing && (mixer.trackNumber == mixer.music.indexOf(sound))){
-		event.target.playVideo();
-		sound.seek(time);
-	}
-	sound.dom.label.innerHTML = "";
-	sound.dom.label.appendChild(document.createTextNode(sound.youtube.getVideoData().title));
-	sound.setVolume(volume);
-	sound.setVolume();
-	sound.isReady = true;
-	//mixer.log(time);
-};
-
-
 mixer.addTrack = function(){
 	let sound = {};
 	sound.id = (mixer.sounds.push(sound)-1);
@@ -363,12 +277,6 @@ mixer.addTrack = function(){
 	sound.dom = mixer.ui.createChannelYoutube(mixer.role, sound.id, {
 		'onReady': function(event){
 			sound.ready = true;
-			//event.target.playVideo();
-			//sound.dom.label.innerHTML = "";
-			//sound.dom.label.appendChild(document.createTextNode(sound.youtube.getVideoData().title));
-			//sound.setVolume(volume);
-			//sound.seek(time);
-			//mixer.log(time);
 			mixer.bind(sound.key("volume"),(v)=>{sound.setVolume(v,true);});
 			mixer.bind(sound.key("videoID"),(v)=>{sound.load(v,true);});
 			mixer.bind(sound.key("time"),(v)=>{sound.seek(v,true);});
@@ -379,7 +287,7 @@ mixer.addTrack = function(){
 			}
 		},
 		'onError': function(){
-			dom.channel.className = "mixerChannel channelError";
+			sound.dom.channel.className = "mixerChannel channelError";
 		}
 	});
 	
@@ -445,33 +353,144 @@ mixer.addTrack = function(){
 		}
 	};
 	
-	
-
-	
-	sound.send = function(conn){
-		//conn.send({command:"track", id: sound.id, volume: sound.dom.slider.value, time: sound.getTime() });
-	}
-	
 	sound.dom.slider.addEventListener("input", function(){
-		//mixer.ui.hooks.setVolume(sound);
 		mixer.bind.set(sound.key("volume"),sound.dom.slider.value);
 		
 	});
 	if(mixer.role == "host"){
 		sound.dom.del.addEventListener("click", function(){
 			sound.load(null);
-			//mixer.removeSound(sound);
 		});
 	}
 };
 
+
+mixer.juke.addTrack = function(videoID, suppressBind){
+	let dom = mixer.ui.createJukeTrack(videoID, mixer.role);
+	let musicID = mixer.juke.music.push(videoID);
+	
+	dom.del.addEventListener("click", function(){
+		
+		let ids = mixer.juke.listString.split("|");
+		if(ids.length == 1){
+			mixer.ui.hooks.jukePause();
+		}else{
+			mixer.ui.hooks.jukeSkip();
+		}
+		var index = ids.indexOf(videoID);
+		if(index != -1){
+			ids.splice(index, 1);
+			mixer.bind.set("musicList",ids.join("|"));
+		}
+		
+	});
+	
+	dom.channel.ondblclick = function(){
+		if(mixer.role=="client"){return;};
+		mixer.bind.set("musicID",videoID);
+	}
+	
+	mixer.ui.dom.jukeContent.appendChild(dom.channel);
+	if(!suppressBind){
+		mixer.bind.set("musicList",mixer.bind.get("musicList")+"|"+videoID);
+	}
+};
+
+mixer.bind("musicList",(v)=>{
+	mixer.juke.listString = v??"";
+	mixer.ui.dom.jukeContent.innerHTML = "";
+	let ids = mixer.juke.listString.split("|");
+	for(let id of ids){
+		//why yes i am aware of how inefficient and stupid this is
+		//but im lazy and want to do this with binding rather than
+		//the messiness of making more host commands
+		//doing it this way means i have to write less code
+		if(id==""){continue;};
+		mixer.juke.addTrack(id, true);
+	}
+	mixer.ui.jukeUpdatePlaying(mixer.bind.get("musicID"));
+});
 
 //from https://stackoverflow.com/questions/3452546/how-do-i-get-the-youtube-video-id-from-a-url
 var parseYoutube = function(url){
 	var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#\&\?]*).*/;
 	var match = url.match(regExp);
 	return (match&&match[7].length==11)? match[7] : false;
-}
+};
+
+YT.ready(()=>{
+mixer.juke.player = new YT.Player(mixer.ui.dom.jukePlayer.id,{
+	height: '390',
+	width: '640',
+	events: {
+		'onReady': function(event){
+			
+			mixer.bind("musicVol",(v)=>{
+				mixer.musicVol = v;
+				mixer.ui.dom.musicVolume.value = v;
+				mixer.juke.player.setVolume(mixer.musicVol * mixer.masterVol);
+			});
+			mixer.bind("musicID",(v)=>{
+				if(v == null){
+					mixer.juke.player.stopVideo();
+					return;
+				};
+				mixer.juke.resumeTrack = v;
+				mixer.juke.player.loadVideoById(v);
+				
+				mixer.ui.jukeUpdatePlaying(v);
+			});
+		},
+		'onStateChange': function(event){
+			if(event.data === YT.PlayerState.ENDED){
+				mixer.ui.hooks.jukeSkip();
+			}
+			
+		},
+		'onError': function(){
+			//sound.dom.channel.className = "mixerChannel channelError";
+		}
+	}
+});
+});
+
+
+mixer.ui.hooks.jukePlay = function(){
+	let ids = (mixer.bind.get("musicList")??"").split("|");
+	if(ids == ""){return;};
+	
+	let toPlay = ids[0];
+	if(ids.indexOf(mixer.juke.resumeTrack) != -1){
+		toPlay = mixer.juke.resumeTrack;
+	}
+	
+	mixer.bind.set("musicID",toPlay);
+};
+
+mixer.ui.hooks.jukePause = function(){
+	mixer.bind.set("musicID",null);
+};
+
+mixer.ui.hooks.jukeSkip = function(){
+	let playingID = mixer.bind.get("musicID");
+	
+	if(playingID == null){
+		playingID = mixer.juke.resumeTrack;
+	};
+	
+	let ids = (mixer.bind.get("musicList")??"").split("|");
+	if(ids == ""){return;};
+	
+	let index = ids.indexOf(playingID)+1;
+	if(index < 0){index = 0;};
+	if(index >= ids.length){index = 0;};
+	
+	mixer.bind.set("musicID",ids[index]);
+};
+
+mixer.ui.hooks.setMusicVol = function(){
+	mixer.bind.set("musicVol",mixer.ui.dom.musicVolume.value);
+};
 
 
 mixer.ui.hooks.addYoutube = function(){
@@ -480,7 +499,6 @@ mixer.ui.hooks.addYoutube = function(){
 		mixer.ui.showError("Invalid YouTube Link", false);
 		return;
 	}
-	//mixer.addYoutube(ytid, mixer.ui.dom.mixerAddSlider.value);
 	mixer.playTrack(ytid, mixer.ui.dom.mixerAddSlider.value);
 	mixer.ui.dom.youtubeID.value = "";
 }
@@ -491,8 +509,8 @@ mixer.ui.hooks.jukeAddYoutube = function(){
 		return;
 	}
 	let err = false;
-	
-	for(index in inputs){
+	let ids = mixer.bind.get("musicList")??"";
+	for(let index in inputs){
 		let line = inputs[index].trim();
 		if(line == ""){
 			continue;
@@ -502,9 +520,10 @@ mixer.ui.hooks.jukeAddYoutube = function(){
 			err = true;
 			continue;
 		};
-		mixer.jukeAddYoutube(ytid);
+		if(ids.includes(ytid)){continue;};
+		ids += ((ids=="")?"":"|")+ytid;
 	}
-	
+	mixer.bind.set("musicList", ids);
 	if(err == true){
 		mixer.ui.showError("One or more lines contained an invalid YouTube link and was not added.", false);
 		return;
@@ -526,6 +545,9 @@ mixer.init = function(){
 		*/
 	}
 };
+
+mixer.ui.hooks.setMasterVol();
+mixer.ui.hooks.setMusicVol();
 
 mixer.init();
 })();

@@ -54,6 +54,7 @@ binder.set = function(key, value){
 };
 
 binder.get = function(key){
+	if(binder.properties[key] == undefined){return undefined;};
 	return binder.properties[key].value;
 };
 

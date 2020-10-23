@@ -27,9 +27,11 @@ ui.dom.back = document.getElementById("back");
 ui.dom.hostOnly = document.getElementsByClassName("hostOnly");
 ui.dom.masterSlider = document.getElementById("masterSlider");
 ui.dom.jukebox = document.getElementById("jukebox");
+ui.dom.jukeContent = document.getElementById("jukeContent");
 ui.dom.musicVolume = document.getElementById("musicVolume");
 ui.dom.jukeYoutubeID = document.getElementById("jukeYoutubeID");
 ui.dom.notificationBar = document.getElementById("notificationBar");
+ui.dom.jukePlayer = document.getElementById("jukePlayer");
 
 ui.dom.back.style.backgroundImage = "url('f/backgrounds/"+ui.backIndex+".png')";
 
@@ -97,6 +99,45 @@ ui.updateID = function(id,hostID,role,siteUrl){
 	}
 };
 
+ui.jukeUpdatePlaying = function(playingID){
+	let track = (playingID==undefined)?undefined:document.getElementById("jukeTrack"+playingID);
+	let playing = document.getElementsByClassName("playing");
+	for(let ch of playing){
+		ch.className = "jukeTrack";
+	}
+	if(track != undefined){
+		track.className = "jukeTrack playing";
+	}
+};
+
+ui.createJukeTrack = function(videoID, role){
+	let dom = {};
+	dom.channel = document.createElement("div");
+	dom.channel.className = "jukeTrack";
+	dom.channel.id = "jukeTrack"+videoID;
+	dom.del = document.createElement("button");
+	dom.del.className = "jukeDelete";
+	if(role == "client"){
+		dom.del.className += " hidden";
+	}
+	dom.label = document.createElement("div");
+	dom.label.className = "jukeLabel noSelect";
+	dom.label.addEventListener('contextmenu', function(event){
+		dom.label.contentEditable = "true";
+		dom.label.focus();
+		dom.label.className = "jukeLabel";
+		event.preventDefault();
+	});
+	dom.label.addEventListener('focusout', function(event){
+		dom.label.contentEditable = "false";
+		dom.label.className = "jukeLabel noSelect";
+	});
+	dom.label.appendChild(document.createTextNode(videoID));
+	dom.channel.appendChild(dom.del);
+	dom.channel.appendChild(dom.label);
+	return dom;
+};
+
 ui.createChannelYoutube = function(role,id,events){
 	let dom = {};
 	dom.sound = document.createElement("div");
@@ -107,13 +148,7 @@ ui.createChannelYoutube = function(role,id,events){
 	dom.youtube = new YT.Player(dom.sound.id,{
 		height: '390',
 		width: '640',
-		events: events//{
-			//'onReady': function(event){youtubeOnReady(event, sound, volume, time);},
-			//'onStateChange': youtubeOnStateChange,
-            //'onError': function(){
-            //    dom.channel.className = "mixerChannel channelError";
-            //}
-		//}
+		events: events
 	});
 	
 	dom.channel = document.createElement("div");
