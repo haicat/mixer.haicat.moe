@@ -1,0 +1,18 @@
+{
+  "name": "mixer.haicat.moe",
+  "version": "1.0.0",
+  "description": "A peer-to-peer sound mixing board.",
+  "scripts": {
+    "compile": "tsc && (npx browserify build/entrypoint.js -o static/mixerApp.js)"
+  },
+  "author": "haicat",
+  "devDependencies": {
+    "@types/node": "^20.5.9",
+    "browserify": "^17.0.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "peerjs": "^1.5.0",
+    "youtube-iframe": "^1.0.3"
+  }
+}

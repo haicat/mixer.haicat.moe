@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html>
 	<head>
-	<script src = "https://unpkg.com/peerjs@1.0.0/dist/peerjs.min.js"></script>
-	<script src = "https://www.youtube.com/iframe_api"></script>
-	<link rel = "stylesheet" href = "f/mixer.css">
-	<title>mixer.haicat</title>
+		<link rel = "stylesheet" href = "mixer.css">
+		<title>mixer.haicat</title>
 	</head>
 	<body>
 		<div id = "back"></div>
@@ -35,7 +33,7 @@
 					<tr class = "hostOnly">
 						<td>YouTube URL</td>
 						<td><input id="youtubeID" type="text" class = "textbox" /></td>
-						<td><button onclick = "mixer.ui.hooks.addYoutube()">Add</button></td>
+						<td><button onclick = "mixer.hookAddYoutube()">Add</button></td>
 					</tr>
 					<tr class = "hostOnly">
 						<td>New Sound Volume</td>
@@ -56,12 +54,12 @@
 					<tr class = "hostOnly">
 						<td>YouTube URL(s) <a class="helphover" href="javascript:void(0)" onclick = "alert('Multiple links can be entered at once separated by a linebreak.', false);" title="Multiple links can be entered at once separated by a linebreak.">?</a></td>
 						<td><textarea id="jukeYoutubeID" type="text" class = "textbox"></textarea></td>
-						<td><button onclick = "mixer.ui.hooks.jukeAddYoutube()">Add</button></td>
+						<td><button onclick = "mixer.hookJukeAddYoutube()">Add</button></td>
 					</tr>
 					<tr class = "hostOnly">
-						<td><button onclick = "mixer.ui.hooks.jukePlay()">Play</button></td>
-						<td><button onclick = "mixer.ui.hooks.jukePause()">Pause</button></td>
-						<td><button onclick = "mixer.ui.hooks.jukeSkip()">Skip</button></td>
+						<td><button onclick = "mixer.hookJukePlay()">Play</button></td>
+						<td><button onclick = "mixer.hookJukePause()">Pause</button></td>
+						<td><button onclick = "mixer.hookJukeSkip()">Skip</button></td>
 					</tr>
 				</table>
 			</div>
@@ -88,12 +86,12 @@
 								<td><input type = "text" class = "textbox" id = "joinID"></input></td>
 							</tr>
 						</table>
-						<button onclick = "mixer.ui.hooks.connect()">Connect</button>
+						<button onclick = "mixer.hookConnect()">Connect</button>
 						
 					</td>
 					<td class = "vr"></td>
 					<td>
-						<button onclick = "mixer.ui.hooks.host()">Host</button>
+						<button onclick = "mixer.hookHost()">Host</button>
 					</td>
 				</tr>
 			</table>
@@ -103,7 +101,7 @@
             <div class = "popup panel" id = "errorBox">
                 <div class = "titlebar center">Error</div>
                 <div id = "errorContent"></div>
-                <div class = "center"><button onclick = "mixer.ui.hooks.errorOK()">OK</button></div>
+                <div class = "center"><button onclick = "mixer.hookErrorOK()">OK</button></div>
             </div>
 		</div>
 		
@@ -111,8 +109,8 @@
 			<div class = "titlebar center">Connection</div>
 			Connect to host?
 			<div class = "center">
-				<button onclick = "mixer.ui.hooks.acYes()">Yes</button>
-				<button onclick = "mixer.ui.hooks.acNo()">No</button>
+				<button onclick = "mixer.hookAcYes()">Yes</button>
+				<button onclick = "mixer.hookAcNo()">No</button>
 			</div>
 		</div>
 		
@@ -124,5 +122,5 @@
 			
 		
 	</body>
-	<script type="module" src = "f/mixer.js"></script>
+	<script src = "mixerApp.js"></script>
 </html>
