@@ -4,7 +4,8 @@
   "description": "A peer-to-peer sound mixing board.",
   "scripts": {
     "prepare": "npm run compile",
-    "compile": "tsc && (npx browserify build/entrypoint.js -o static/mixerApp.js)"
+    "compile": "tsc && (npx browserify build/clientScripts/entrypoint.js -o static/mixerApp.js)",
+    "clean": "(rm -rf ./build) && (rm -f static/mixerApp.js)"
   },
   "exports":{
     "." : "./build/serverModule.js"
