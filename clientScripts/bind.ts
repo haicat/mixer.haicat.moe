@@ -1,4 +1,5 @@
 export type callback = (value : any)=>void;
+export type keyedCallback = (key: string, value: any)=>void;
 
 export interface Ibinder{
 	(key: string, cb : callback) : void;
@@ -6,7 +7,7 @@ export interface Ibinder{
 	properties? : any;
 	globalBindings? : any[];
 	bind?: (key: string, cb : callback) => void;
-	bindGlobal?: (cb: callback) => void;
+	bindGlobal?: (cb: keyedCallback) => void;
 	set?: (key: string, value: any) => void;
 	get?: (key: string) => any;
 };

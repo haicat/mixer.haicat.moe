@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A peer-to-peer sound mixing board.",
   "scripts": {
-    "compile": "tsc && (npx browserify build/mixer.js -o static/mixerApp.js)"
+    "compile": "tsc && (npx browserify build/entrypoint.js -o static/mixerApp.js)"
   },
   "author": "haicat",
   "devDependencies": {

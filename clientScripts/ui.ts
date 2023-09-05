@@ -1,188 +1,187 @@
-
-var ui : any = {};
-ui.dom = {};
-ui.hooks = {};
-
-ui.errorReconnect = false;
+export const dom = {
+	idBox: document.getElementById("idBox") as HTMLDivElement,
+	connectBox: document.getElementById("connectBox") as HTMLDivElement,
+	loader: document.getElementById("loader") as HTMLDivElement,
+	errorBox: document.getElementById("errorBox") as HTMLDivElement,
+	errorContent: document.getElementById("errorContent") as HTMLDivElement,
+	mixerBox: document.getElementById("mixerBox") as HTMLDivElement,
+	soundCont: document.getElementById("soundCont") as HTMLDivElement,
+	//soundURL: document.getElementById("soundURL") ,
+	youtubeID: document.getElementById("youtubeID") as HTMLInputElement,
+	joinID: document.getElementById("joinID") as HTMLInputElement,
+	mixerAddSlider: document.getElementById("mixerAddSlider") as HTMLInputElement,
+	joinLink: document.getElementById("joinLink") as HTMLDivElement,
+	autoConnectBox: document.getElementById("autoConnectBox") as HTMLDivElement,
+	errorCont: document.getElementById("errorCont") as HTMLDivElement,
+	back: document.getElementById("back") as HTMLDivElement,
+	hostOnly: document.getElementsByClassName("hostOnly"),
+	masterSlider: document.getElementById("masterSlider") as HTMLInputElement,
+	jukebox: document.getElementById("jukebox") as HTMLDivElement,
+	jukeContent: document.getElementById("jukeContent") as HTMLDivElement,
+	musicVolume: document.getElementById("musicVolume") as HTMLInputElement,
+	jukeYoutubeID: document.getElementById("jukeYoutubeID") as HTMLTextAreaElement,
+	notificationBar: document.getElementById("notificationBar") as HTMLDivElement,
+	jukePlayer: document.getElementById("jukePlayer") as HTMLDivElement
+};
 
 const backgroundLast = 3; //last background image (highest number .png)
 
-ui.backIndex = Math.floor(Math.random() * backgroundLast) + 1;
+const backIndex = Math.floor(Math.random() * backgroundLast) + 1;
 
+dom.back.style.backgroundImage = "url('backgrounds/"+backIndex+".png')";
 
-ui.dom.idBox = document.getElementById("idBox");
-ui.dom.connectBox = document.getElementById("connectBox");
-ui.dom.loader = document.getElementById("loader");
-ui.dom.errorBox = document.getElementById("errorBox");
-ui.dom.errorContent = document.getElementById("errorContent");
-ui.dom.mixerBox = document.getElementById("mixerBox");
-ui.dom.soundCont = document.getElementById("soundCont");
-ui.dom.soundURL = document.getElementById("soundURL");
-ui.dom.youtubeID = document.getElementById("youtubeID");
-ui.dom.joinID = document.getElementById("joinID");
-ui.dom.mixerAddSlider = document.getElementById("mixerAddSlider");
-ui.dom.joinLink = document.getElementById("joinLink");
-ui.dom.autoConnectBox = document.getElementById("autoConnectBox");
-ui.dom.errorCont = document.getElementById("errorCont");
-ui.dom.back = document.getElementById("back");
-ui.dom.hostOnly = document.getElementsByClassName("hostOnly");
-ui.dom.masterSlider = document.getElementById("masterSlider");
-ui.dom.jukebox = document.getElementById("jukebox");
-ui.dom.jukeContent = document.getElementById("jukeContent");
-ui.dom.musicVolume = document.getElementById("musicVolume");
-ui.dom.jukeYoutubeID = document.getElementById("jukeYoutubeID");
-ui.dom.notificationBar = document.getElementById("notificationBar");
-ui.dom.jukePlayer = document.getElementById("jukePlayer");
+export default new class {
+	errorReconnect = false;
 
-ui.dom.back.style.backgroundImage = "url('backgrounds/"+ui.backIndex+".png')";
+	hideConnectBox(){
+		dom.connectBox.className = "popup panel hidden";
+	};
 
-ui.hideConnectBox = function(){
-	ui.dom.connectBox.className = "popup panel hidden";
-};
+	showConnectBox(){
+		dom.connectBox.className = "popup panel";
+	};
 
-ui.showConnectBox = function(){
-	ui.dom.connectBox.className = "popup panel";
-};
+	showLoader(){
+		dom.loader.className = "popup panel";
+	};
 
-ui.showLoader = function(){
-	ui.dom.loader.className = "popup panel";
-};
+	hideLoader(){
+		dom.loader.className = "popup panel hidden";
+	};
 
-ui.hideLoader = function(){
-	ui.dom.loader.className = "popup panel hidden";
-};
+	showConnectConfirm(){
+		dom.autoConnectBox.className = "popup panel";
+	};
 
-ui.showConnectConfirm = function(){
-	ui.dom.autoConnectBox.className = "popup panel";
-}
+	hideConnectConfirm(){
+		dom.autoConnectBox.className = "popup panel hidden";
+	};
 
-ui.hideConnectConfirm = function(){
-	ui.dom.autoConnectBox.className = "popup panel hidden";
-}
+	showError(err, disconnect = false){
+		if(disconnect==true){
+			this.errorReconnect = true;
+			this.hideMain();
+		}
+		dom.errorCont.className = "";
+		//ui.dom.errorBox.className = "popup panel";
+		dom.errorContent.innerHTML = "";
+		dom.errorContent.appendChild(document.createTextNode(err));
+	};
 
-ui.showError = function(err, disconnect){
-	if(disconnect==true){
-		ui.errorReconnect = true;
-		ui.hideMain();
-	}
-	ui.dom.errorCont.className = "";
-	//ui.dom.errorBox.className = "popup panel";
-	ui.dom.errorContent.innerHTML = "";
-	ui.dom.errorContent.appendChild(document.createTextNode(err));
-};
+	hideError(){
+		dom.errorCont.className = "fadeOut";
+		//ui.dom.errorBox.className = "popup panel hidden";
+	};
 
-ui.hideError = function(){
-    ui.dom.errorCont.className = "fadeOut";
-	//ui.dom.errorBox.className = "popup panel hidden";
-};
+	showMain(peerID,hostID,role,siteUrl){
+		dom.mixerBox.className = "panel";
+		dom.jukebox.className = "panel";
+		this.updateID(peerID,hostID,role,siteUrl);
+	};
 
-ui.showMain = function(peerID,hostID,role,siteUrl){
-	ui.dom.mixerBox.className = "panel";
-	ui.dom.jukebox.className = "panel";
-	ui.updateID(peerID,hostID,role,siteUrl);
-};
+	hideMain(){
+		dom.mixerBox.className = "panel hidden";
+		dom.jukebox.className = "panel hidden";
+	};
 
-ui.hideMain = function(){
-	ui.dom.mixerBox.className = "panel hidden";
-	ui.dom.jukebox.className = "panel hidden";
-};
+	updateID(id,hostID,role,siteUrl){
+		dom.idBox.innerHTML = "";
+		dom.idBox.appendChild(document.createTextNode(id));
+		
+		dom.joinLink.innerHTML = "";
+		if(role == "host"){
+			dom.joinLink.appendChild(document.createTextNode(siteUrl+"?join="+id));
+		}
+		if(role=="client"){
+			dom.joinLink.appendChild(document.createTextNode(siteUrl+"?join="+hostID));
+		}
+	};
 
-ui.updateID = function(id,hostID,role,siteUrl){
-	ui.dom.idBox.innerHTML = "";
-	ui.dom.idBox.appendChild(document.createTextNode(id));
-	
-	ui.dom.joinLink.innerHTML = "";
-	if(role == "host"){
-		ui.dom.joinLink.appendChild(document.createTextNode(siteUrl+"?join="+id));
-	}
-	if(role=="client"){
-		ui.dom.joinLink.appendChild(document.createTextNode(siteUrl+"?join="+hostID));
-	}
-};
+	jukeUpdatePlaying(playingID){
+		let track = (playingID==undefined)?undefined:document.getElementById("jukeTrack"+playingID);
+		let playing = document.getElementsByClassName("playing");
+		for(let ch of playing){
+			ch.className = "jukeTrack";
+		}
+		if(track != undefined){
+			track.className = "jukeTrack playing";
+		}
+	};
 
-ui.jukeUpdatePlaying = function(playingID){
-	let track = (playingID==undefined)?undefined:document.getElementById("jukeTrack"+playingID);
-	let playing = document.getElementsByClassName("playing");
-	for(let ch of playing){
-		ch.className = "jukeTrack";
-	}
-	if(track != undefined){
-		track.className = "jukeTrack playing";
-	}
-};
-
-ui.createJukeTrack = function(videoID, role){
-	let dom : any = {};
-	dom.channel = document.createElement("div");
-	dom.channel.className = "jukeTrack";
-	dom.channel.id = "jukeTrack"+videoID;
-	dom.del = document.createElement("button");
-	dom.del.className = "jukeDelete";
-	if(role == "client"){
-		dom.del.className += " hidden";
-	}
-	dom.label = document.createElement("div");
-	dom.label.className = "jukeLabel noSelect";
-	dom.label.addEventListener('contextmenu', function(event){
-		dom.label.contentEditable = "true";
-		dom.label.focus();
-		dom.label.className = "jukeLabel";
-		event.preventDefault();
-	});
-	dom.label.addEventListener('focusout', function(event){
-		dom.label.contentEditable = "false";
-		dom.label.className = "jukeLabel noSelect";
-	});
-	dom.label.appendChild(document.createTextNode(videoID));
-	dom.channel.appendChild(dom.del);
-	dom.channel.appendChild(dom.label);
-	return dom;
-};
-
-ui.createChannelYoutube = function(role,id,events){
-	let dom : any = {};
-	dom.sound = document.createElement("div");
-	dom.sound.id = "mixerTrack"+id;
-	
-	ui.dom.soundCont.appendChild(dom.sound);
-	
-	dom.youtube = new (window as any).YT.Player(dom.sound.id,{
-		height: '390',
-		width: '640',
-		events: events
-	});
-	
-	dom.channel = document.createElement("div");
-	dom.channel.className = "mixerChannel hidden";
-	
-	dom.slider = document.createElement("input");
-	dom.slider.className = "mixerSlider";
-	dom.slider.type = "range";
-	dom.slider.setAttribute("orient", "vertical");
-	dom.slider.min = 0;
-	dom.slider.max = 100;
-	dom.slider.value = 70;//volume;
-	
-	if(role == "host"){
+	createJukeTrack(videoID, role){
+		let dom : any = {};
+		dom.channel = document.createElement("div");
+		dom.channel.className = "jukeTrack";
+		dom.channel.id = "jukeTrack"+videoID;
 		dom.del = document.createElement("button");
-		dom.del.className = "mixerDelete";
+		dom.del.className = "jukeDelete";
+		if(role == "client"){
+			dom.del.className += " hidden";
+		}
+		dom.label = document.createElement("div");
+		dom.label.className = "jukeLabel noSelect";
+		dom.label.addEventListener('contextmenu', function(event){
+			dom.label.contentEditable = "true";
+			dom.label.focus();
+			dom.label.className = "jukeLabel";
+			event.preventDefault();
+		});
+		dom.label.addEventListener('focusout', function(event){
+			dom.label.contentEditable = "false";
+			dom.label.className = "jukeLabel noSelect";
+		});
+		dom.label.appendChild(document.createTextNode(videoID));
 		dom.channel.appendChild(dom.del);
-	}
-	
-	dom.label = document.createElement("div");
-	dom.label.className = "mixerLabel";
-	
-	dom.label.appendChild(document.createTextNode("Track "+id));
-	dom.label.contentEditable = "true";
-	
-	dom.channel.appendChild(dom.slider);
-	
-	dom.channel.appendChild(dom.label);
-	
-	
-	
-	ui.dom.mixerBox.appendChild(dom.channel);
-	return dom;
-};
+		dom.channel.appendChild(dom.label);
+		return dom;
+	};
 
-export default ui;
+	createChannelYoutube(role,id,events){
+		let ch : any = {};
+		ch.sound = document.createElement("div");
+		ch.sound.id = "mixerTrack"+id;
+		
+		dom.soundCont.appendChild(ch.sound);
+		
+		ch.youtube = new (window as any).YT.Player(ch.sound.id,{
+			height: '390',
+			width: '640',
+			events: events
+		});
+		
+		ch.channel = document.createElement("div");
+		ch.channel.className = "mixerChannel hidden";
+		
+		ch.slider = document.createElement("input");
+		ch.slider.className = "mixerSlider";
+		ch.slider.type = "range";
+		ch.slider.setAttribute("orient", "vertical");
+		ch.slider.min = 0;
+		ch.slider.max = 100;
+		ch.slider.value = 70;//volume;
+		
+		if(role == "host"){
+			ch.del = document.createElement("button");
+			ch.del.className = "mixerDelete";
+			ch.channel.appendChild(ch.del);
+		}
+		
+		ch.label = document.createElement("div");
+		ch.label.className = "mixerLabel";
+		
+		ch.label.appendChild(document.createTextNode("Track "+id));
+		ch.label.contentEditable = "true";
+		
+		ch.channel.appendChild(ch.slider);
+		
+		ch.channel.appendChild(ch.label);
+		
+		
+		
+		dom.mixerBox.appendChild(ch.channel);
+		return ch;
+	};
+}();
+
+
+
