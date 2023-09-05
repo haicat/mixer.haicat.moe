@@ -5,6 +5,9 @@
   "scripts": {
     "compile": "tsc && (npx browserify build/entrypoint.js -o static/mixerApp.js)"
   },
+  "exports":{
+    "." : "./build/serverModule.js"
+  },
   "author": "haicat",
   "devDependencies": {
     "@types/node": "^20.5.9",
@@ -12,6 +15,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
+    "mime": "^3.0.0",
     "peerjs": "^1.5.0",
     "youtube-iframe": "^1.0.3"
   }
