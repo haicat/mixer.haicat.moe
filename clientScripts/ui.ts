@@ -1,4 +1,5 @@
-var ui = {};
+
+var ui : any = {};
 ui.dom = {};
 ui.hooks = {};
 
@@ -33,7 +34,7 @@ ui.dom.jukeYoutubeID = document.getElementById("jukeYoutubeID");
 ui.dom.notificationBar = document.getElementById("notificationBar");
 ui.dom.jukePlayer = document.getElementById("jukePlayer");
 
-ui.dom.back.style.backgroundImage = "url('f/backgrounds/"+ui.backIndex+".png')";
+ui.dom.back.style.backgroundImage = "url('backgrounds/"+ui.backIndex+".png')";
 
 ui.hideConnectBox = function(){
 	ui.dom.connectBox.className = "popup panel hidden";
@@ -111,7 +112,7 @@ ui.jukeUpdatePlaying = function(playingID){
 };
 
 ui.createJukeTrack = function(videoID, role){
-	let dom = {};
+	let dom : any = {};
 	dom.channel = document.createElement("div");
 	dom.channel.className = "jukeTrack";
 	dom.channel.id = "jukeTrack"+videoID;
@@ -139,13 +140,13 @@ ui.createJukeTrack = function(videoID, role){
 };
 
 ui.createChannelYoutube = function(role,id,events){
-	let dom = {};
+	let dom : any = {};
 	dom.sound = document.createElement("div");
 	dom.sound.id = "mixerTrack"+id;
 	
 	ui.dom.soundCont.appendChild(dom.sound);
 	
-	dom.youtube = new YT.Player(dom.sound.id,{
+	dom.youtube = new (window as any).YT.Player(dom.sound.id,{
 		height: '390',
 		width: '640',
 		events: events
