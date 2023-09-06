@@ -1,19 +1,45 @@
 
 const mime = require("mime");
+const express = require("express");
+const { ExpressPeerServer } = require('peer');
+
+
 import * as fs from "fs";
 
 import { IncomingMessage, ServerResponse } from "http";
 import { UrlWithParsedQuery } from "url";
+import genID from "./genID";
 
-export default class {
+export default class mixer{
     name = "mixer";
+    peerServer: any;
+    expressApp = null;
+    path : string;
+    constructor(server: any = null, path: string = "/api/peer"){
+        this.path = path;
+        if(server != null){
+            this.expressApp = express();
+            this.peerServer = ExpressPeerServer(server,
+                {
+                    //port: 8880,
+                    //path: '/peer',
+                    debug: true,
+                    generateClientId: genID,
+                    //proxied: true,
+                });
+            this.expressApp.use(path, this.peerServer);
+        }
+    }
 
     match(request : IncomingMessage, extra : any){
         return extra.subdomain == "mixer";
     };
 
     run(request : IncomingMessage, response : ServerResponse, extra : any){
-        
+        if(extra.url.pathname.startsWith(this.path)){
+			this.expressApp.handle(request, response, function(){});
+			return;
+		}
         //let fname = request.url.replace("..","").replace("\\","");
         let fname = (extra.url as UrlWithParsedQuery).pathname;
         if(fname == "/" || fname == ""){
@@ -35,3 +61,4 @@ export default class {
         return;
     };
 };
+

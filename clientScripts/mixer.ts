@@ -10,7 +10,12 @@ export default class mixer {
     maxTracks = 6;
     // number of seconds the syncing can be off by, below which it wont correct
     syncTolerance = 3;
-    peer = new Peer();
+    peer = new Peer(undefined, {
+		host: location.hostname,
+		port: Number(location.port) || 443,
+		path: "/api/peer",
+		secure: location.protocol == "https"
+	});
 
     connection = undefined;
 	role = undefined;
