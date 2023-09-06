@@ -8,15 +8,14 @@ import * as fs from "fs";
 
 import { IncomingMessage, ServerResponse } from "http";
 import { UrlWithParsedQuery } from "url";
-import hai from "./hai";
 import genID from "./genID";
 
-export default class mixer extends hai {
+export default class mixer{
     name = "mixer";
     peerServer: any;
     expressApp = null;
     constructor(server: any = null, path: string = "/api/peer"){
-        super();
+
         if(server != null){
             this.expressApp = express();
             this.peerServer = ExpressPeerServer(server,
