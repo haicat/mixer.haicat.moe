@@ -12,7 +12,7 @@ export default class mixer {
     syncTolerance = 3;
     peer = new Peer(undefined, {
 		host: location.hostname,
-		port: 443,
+		port: Number(location.port) || 443,
 		path: "/api/peer",
 		secure: true
 	});
