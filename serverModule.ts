@@ -35,7 +35,10 @@ export default class mixer{
     };
 
     run(request : IncomingMessage, response : ServerResponse, extra : any){
-        
+        if(extra.url.pathname.startsWith("/api/peer")){
+			this.expressApp.handle(request, response, function(){});
+			return;
+		}
         //let fname = request.url.replace("..","").replace("\\","");
         let fname = (extra.url as UrlWithParsedQuery).pathname;
         if(fname == "/" || fname == ""){
