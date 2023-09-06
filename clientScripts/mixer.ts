@@ -14,7 +14,7 @@ export default class mixer {
 		host: location.hostname,
 		port: Number(location.port) || 443,
 		path: "/api/peer",
-		secure: location.protocol == "https"
+		secure: location.protocol == "https:"
 	});
 
     connection = undefined;
