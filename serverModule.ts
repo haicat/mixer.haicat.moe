@@ -14,8 +14,9 @@ export default class mixer{
     name = "mixer";
     peerServer: any;
     expressApp = null;
+    path : string;
     constructor(server: any = null, path: string = "/api/peer"){
-
+        this.path = path;
         if(server != null){
             this.expressApp = express();
             this.peerServer = ExpressPeerServer(server,
@@ -35,7 +36,7 @@ export default class mixer{
     };
 
     run(request : IncomingMessage, response : ServerResponse, extra : any){
-        if(extra.url.pathname.startsWith("/api/peer")){
+        if(extra.url.pathname.startsWith(this.path)){
 			this.expressApp.handle(request, response, function(){});
 			return;
 		}
